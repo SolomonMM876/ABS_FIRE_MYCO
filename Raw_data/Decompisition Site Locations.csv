@@ -1,0 +1,31 @@
+New Name,Veg_Class,Interval ,Severity,National Park,Latitude,Longitude,Access Notes,Additional.access.notes
+ABS001,Sydney Montane,Long,High,Blue Mountains NP,-33.66375,150.36008,Access by short walk from Mt Hay Road,"Drive down Mt Hay Road, walk 130 m to site"
+ABS003,Sydney Montane,Short,Low,Blue Mountains NP,-33.5896,150.26981,Access by short walk from Victoria Falls Road,"Drive down Victoria Falls Road, walk 110 m to site"
+ABS004,Sydney Montane,Short,High,Blue Mountains NP,-33.56827,150.28671,Access by short walk from Victoria Falls Road,"Drive down Victoria Falls Road, walk 42 m to site"
+ABS005,Sydney Montane,Short,Low,Blue Mountains NP,-33.5781,150.27821,Access by short walk from Victoria Falls Road,"Drive down Victoria Falls Road, walk 84 m to site"
+ABS006,Sydney Montane,Long,High,Blue Mountains NP,-33.56611,150.35112,Park on Bells Line of Road,"Park Bells Line of Road, walk 290m"
+ABS007,Sydney Montane,Long,Low,Blue Mountains NP,-33.63916,150.36966,"Park on Mt Hay Road, access is from Lockley Pylon Walking Trail, ~1 km walk","Drive down Mt Hay Road, walk 1.3 km down Lockey Pylon Walking Trail"
+ABS008,Sydney Montane,Long,Low,Blue Mountains NP,-33.65039,150.32069,Car park off Evans Lookout Road,"Drive down Evans Lookout Road, Park Grand Canyon Carpark, walk 80 m to site"
+ABS009,Sydney Montane,Long,Low,Blue Mountains NP,-33.66061,150.33315,Access by short walk from Point Pilcher Road,"Drive down Point Pilchard Road, walk 32 m to site"
+ABS010,Sydney Montane,Short,High,Blue Mountains NP,-33.48607,150.40622,~1.4 km walk down Boronia Point Trail,"Park corner Mt Irvine Rd & Boronia Point Trail, Ride 1.5 km, Walk 30m to site"
+ABS011,Sydney Montane,Short,High,Blue Mountains NP,-33.51962,150.35631,Mount Wilson Road,"Park Mt Wilson Road, walk in 114m"
+ABS012,Sydney Coastal,Long,High,Blue Mountains NP,-33.52589,150.56587,Pattersons Range Trail,Drive down Patterson Ridge Trail and walk 60 m off trail (may need to ride in from gate if closed ~ 0.8km)
+ABS025,Sydney Hinterland ,Short,Low,Parr SCA,-33.36957,150.76163,"Wheelbarrow Ridge Road, ~100 m walk to site",
+ABS026,Sydney Coastal,Short,Low,Wollemi NP,-33.4982,150.50014,"Mount Tootie Road, ~500 m walk to site","Park Mt Tootie Road, Walk 160 m"
+ABS027,Sydney Coastal,Long,Low,Blue Mountains NP,-33.55193,150.55676,"Tree across track blocking access, park here and walk in ",Drive down Brown Ridge Trail and walk 40m (may need to ride in from closed gate 3.3 - 4km)
+ABS028,Sydney Coastal,Long,High,Blue Mountains NP,-33.53172,150.57394,Park off Patersons Range FT and walk along the ridge top,Drive down Patterson Ridge Trail and walk 180 m off trail (may need to ride in from gate if closed ~ 1.8km)
+ABS029,Sydney Coastal,Long,High,Royal NP,-34.08446,151.07002,Warumbul Road,"Drive / Ride 136 m down Warumbi Road, Walk 89 m to site"
+ABS030,Sydney Hinterland ,Short,Low,Yengo NP,-33.14184,150.689,Putty Road,
+ABS031,Sydney Hinterland ,Short,High,Yengo NP,-33.1823,150.69537,Pull into the maintenance trail,
+ABS034,Sydney Coastal,Short,Low,Wollemi NP,-33.44346,150.59972,Tootie Creek Trail,"Drive up Mt Tootie Trail (not private rd), walk 370m to site"
+ABS037,Sydney Coastal,Short,High,Bargo River SCA,-34.34285,150.54413,"Western Road Fire Trail, key required","Drive down Western Road to Amogussy Pog Pog, Ride/Drive 1.8 km, walk 59m to sites (key needed)"
+ABS038,Sydney Hinterland ,Long,High,Bargo River SCA,-34.35266,150.50786,Fire Road No P3,
+ABS039,Sydney Hinterland ,Short,Low,Bargo SCA,-34.3594,150.47408,Trig Road Firetrail,
+ABS040,Sydney Coastal,Short,Low,Bargo SCA,-34.35747,150.46942,Trig Road Firetrail,"Drive / Ride 1.1km down Trigg Road FT, Walk 40m to site"
+ABS045,Sydney Coastal,Long,Low,Morton NP,-34.67128,150.3009,"Echo Point Access Road, Park in Gambells Rest Campground and walk in from Bundanoon Loop Road","Drive down Bundanoon Loop Road, walk 120m to site"
+ABS049,Sydney Hinterland ,Long,Low,Parr SCA,-33.26627,150.67812,Putty Road,
+ABS056,Sydney Hinterland ,Long,High,Yengo NP,-32.79934,150.90987,Old Bulga Road,
+ABS057,Sydney Hinterland ,Long,Low,Yengo NP,-33.07411,150.7211,Wallaby Swamp Trail,
+ABS058,Sydney Hinterland ,Short,High,Yengo NP,-33.20185,150.72148,Womerah Range Trail,
+ABS059,Sydney Hinterland ,Long,Low,Parr SCA,-33.38217,150.84135,Wheelbarrow Ridge Road ,
+ABS060,Sydney Coastal,Short,High,Bargo SCA,-34.31476,150.50943,Bolans Road (key required),"Drive / Ride 500m down Bolan Road, Walk 57m to site (key needed road)"
