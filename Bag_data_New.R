@@ -9,7 +9,7 @@ library(purrr)
 Nutrients.Sites.All<-read_excel('Processed_data/Nutrients_Transect_level.xlsx')
 
 
-myc_data <- read_excel("Bag_data.xlsx", sheet=1)
+myc_data <- read_excel("Raw_data/Bag_data.xlsx", sheet=1)
 
 myc_data$Tube_myc<-as.numeric(myc_data$Tube_myc)
 myc_data$myc<-as.numeric(myc_data$myc)
@@ -17,7 +17,7 @@ myc_data$beads<-as.factor(myc_data$beads)
 myc_data$Tube_ID<-as.factor(myc_data$Tube_ID)
 
 
-bag_data <- read_excel("Bag_data.xlsx", sheet=2)
+bag_data <- read_excel("Raw_data/Bag_data.xlsx", sheet=2)
 
 
 bag_data$Location<-as.factor(bag_data$Location)
@@ -34,11 +34,20 @@ bag_myc<-left_join(bag_data,myc_data, by='Tube_ID')%>%
          harvest_w = coalesce(Nutrient_sub, 0) + coalesce(Bead_weight, 0))%>%
   ungroup()
 
+#This is the second round of drying where I subsampled for DNA and CNP measurments
+Myc_2nd_round_weight <- read_excel("Raw_data/DW_subsample_DNA_CNP.xlsx", 
+                                   sheet = "Sheet2")[,-2] #remove Col called total
+Myc_2nd_round_weight$Tube_ID<-as.factor(Myc_2nd_round_weight$Tube_ID)
+
+bag_myc<-left_join(bag_myc, Myc_2nd_round_weight%>%
+  mutate(Second_Weight=rowSums(select(., DNA, Chem), na.rm = TRUE))%>%
+  select(Tube_ID,Second_Weight), by = 'Tube_ID')
+
+
 #this is calculated from average bag weight of undeployed bags in bag_weight_vol.R
 intial_bag_w<-15.1257*2
 
 #Jeff's math
-
 bag_avg<-bag_myc%>%
   group_by(Site,Transect,Location) %>%
   #remove missing or damaged bags
@@ -63,7 +72,6 @@ bag_avg<-bag_myc%>%
     harvest_date = first(harvest_date),
     Nutrient_sub = sum(Nutrient_sub, na.rm = TRUE),
     Bead_weight = sum(Bead_weight, na.rm = TRUE),
-    Tube_ID = first(Tube_ID),
     notes.x = paste(notes.x, collapse = " | "),
     roots_in_sample = paste(roots_in_sample, collapse = " | "),
     Damage = paste(Damage, collapse = " | "),
@@ -85,7 +93,13 @@ bag_avg<-bag_myc%>%
          myc_bag_yield_est= myc_per_bead*initalmass_est,
          initalmass_est_avg_all= ((intial_bag_w * harvest_w) / mean_undam_harvest_w),
          myc_per_bead_avg_all= (myc / initalmass_est_avg_all),
-         myc_bag_yield_estavg_all= myc_per_bead_avg_all*initalmass_est)
+         myc_bag_yield_estavg_all= myc_per_bead_avg_all*initalmass_est)%>%
+  #now do the same thing to the weights of the myc the second time after weighing
+  mutate(Second_Weight_per_bead= (Second_Weight / initalmass_est),
+         Second_Weight_bag_yield_est= Second_Weight_per_bead*initalmass_est,
+         initalmass_est_avg_all= ((intial_bag_w * harvest_w) / mean_undam_harvest_w),
+         Second_Weight_per_bead_avg_all= (Second_Weight / initalmass_est_avg_all),
+         Second_Weight_bag_yield_estavg_all= Second_Weight_per_bead_avg_all*initalmass_est)
 
 
 #CV of bag weights
@@ -101,14 +115,14 @@ Site.variation<-bag_avg%>%
 
 
 
-PROC_VEG_Transect <- read_excel("~/ABS_FIRE/ABS_FIRE_MYCO/Raw_data/ABS.MER.fielddata.Feb.2023_R.PROCESSED.VEG.COVER_ALL.xlsx", 
+PROC_VEG_Transect <- read_excel("Raw_data/ABS.MER.fielddata.Feb.2023_R.PROCESSED.VEG.COVER_ALL.xlsx", 
                                 sheet = "Transect.Level_Data")
 PROC_VEG_Transect<-PROC_VEG_Transect%>%
   mutate(Site=gsub('ABS00|ABS0', "", Site),
          Transect=gsub('T',"",Transect))
 
  
-Site_Info <- read_excel("~/ABS_FIRE/ABS_FIRE_MYCO/Site.Info.xlsx")%>%
+Site_Info <- read_excel("Raw_data/Site.Info.xlsx")%>%
   select('1st_Soil_Sample',Bag_Install,Site,Pair)%>%
   mutate(Site=gsub('ABS00|ABS0', "", Site))%>%
            unique()
@@ -116,7 +130,6 @@ Site_Info <- read_excel("~/ABS_FIRE/ABS_FIRE_MYCO/Site.Info.xlsx")%>%
 site_data<-list(bag_avg, Nutrients.Sites.All,PROC_VEG_Transect,Site_Info)
 #calculate variation within sites in terms of biomass 
 Bag_Site<-reduce(site_data,left_join)%>%
-  mutate(log_c_myc=log(myc_per_bead))%>%
   arrange(Transect, Location) %>%
   mutate(Location = factor(Location, levels = sort(unique(Location))))%>%
   group_by(Site)%>%
@@ -125,9 +138,16 @@ Bag_Site<-reduce(site_data,left_join)%>%
          z_score = (myc_bag_yield_est - mean_yield) / sd_yield,
          is_outlier_Z = abs(z_score) > 2)
 
-rm(tmp,bag_data,myc_data,bag_myc,Site_Info,site_data,bag_avg)
+rm(bag_data,myc_data,bag_myc,Site_Info,site_data,bag_avg)
 
 Bag_Site$log10_myc_bag_yield_est <- log10(Bag_Site$myc_bag_yield_est + 0.18)
+Bag_Site$log10_Second_Weight_bag_yield_est <- log10(Bag_Site$Second_Weight_bag_yield_est + 0.095)
+
+Bag_Site %>%
+  arrange(Second_Weight_bag_yield_est) %>%
+  head()%>%
+  select(Second_Weight_bag_yield_est)
+
 #hist(log10(.05+Bag_Site$NO3))
 Bag_Site$Fire.Interval<-factor(Bag_Site$Fire.Interval, levels = c('Short','Long'))
 Bag_Site$Fire.Severity<-factor(Bag_Site$Fire.Severity, levels = c('Low','High'))
@@ -146,9 +166,7 @@ Bag_Site <- Bag_Site %>%
 mean(Bag_Site$Days_Installed)
 sd(Bag_Site$Days_Installed)
 
-colnames(Bag_Site)
-
 
 
 library(writexl)
-write_xlsx(Bag_Site, path='~/ABS_FIRE/ABS_FIRE_MYCO/Processed_data/All_Bag_Site_Info.xlsx')
+write_xlsx(Bag_Site, path='Processed_data/All_Bag_Site_Info.xlsx')

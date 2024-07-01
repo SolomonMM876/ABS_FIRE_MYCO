@@ -8,19 +8,14 @@ library(emmeans)
 library(readxl)
 library(dplyr)
 
-Bag_Site<-read_excel('~/ABS_FIRE/ABS_FIRE_MYCO/Processed_data/All_Bag_Site_Info.xlsx')
+Bag_Site<-read_excel('Processed_data/All_Bag_Site_Info.xlsx')
 
 
-Tubes<-Bag_Site%>%
-  select(Site,Transect,Location,Tube_ID,myc)%>%
-  group_by(Site,Transect)
-library(writexl)
-write_xlsx(Tubes,'~/ABS_FIRE/ABS_FIRE_MYCO/Processed_data/Tube_ID.xlsx')
 
 Myc_Weight<-Bag_Site%>%
   select(Site,Transect,Location,myc)%>%
   mutate(Location_Group = case_when(
-    Location %in% c(3, 16) ~ "3_and_16",
+    Location %in% c(3, 16,16.1, 16.2) ~ "3_and_16",
     Location %in% c(33, 47) ~ "33_and_47"))%>%
   group_by(Site,Transect, Location_Group)%>%
   mutate(sum_myc = sum(myc),
@@ -29,9 +24,9 @@ Myc_Weight<-Bag_Site%>%
 
 
 
-#removing outliers
-Bag_Site$log10_myc_bag_yield_est[c(14,26)]<-NA
-Bag_Site$myc_bag_yield_est[c(14,26)]<-NA
+  #removing outliers
+  #Bag_Site$log10_myc_bag_yield_est[c(14,26)]<-NA
+  #Bag_Site$myc_bag_yield_est[c(14,26)]<-NA
 #both rows recorded 0 biomass because of harvest issue
 #Removed row 14 because both bags were found out of the ground 
 #Removed row 26 because no recorded biomass
@@ -43,6 +38,8 @@ Bag_Site <- Bag_Site[-x, ]  # drop those rows
 
 
 m1<-lmer(log10_myc_bag_yield_est~Fire.Severity+ Fire.Interval + (1|Site/Transect) , data=Bag_Site)
+#checking to see if second round of weighing changed anything
+m8<-lmer(log10_Second_Weight_bag_yield_est ~Fire.Severity+ Fire.Interval + (1|Site/Transect) , data=Bag_Site)
 m2<-lmer(Bray.P~   Fire.Interval + Fire.Severity + (1|Site) , data=Bag_Site)
 m3<-lmer(NH4~   Fire.Interval + Fire.Severity + (1|Site) , data=Bag_Site)
 m4<-lmer(NO3~   Fire.Interval  * Fire.Severity+ (1|Site) , data=Bag_Site)
@@ -105,7 +102,12 @@ Anova(m7,test='F')
 plot(m7)
 qqPlot(resid(m7))
 r2(m7)
-
+#8 (Bray.P~Biomass)
+summary(m8)
+Anova(m8,test='F')
+plot(m8)
+qqPlot(resid(m8))
+r2(m8)
 
 Bag_Site%>%
   ggplot(aes(x=Site, y=myc_bag_yield_est))+

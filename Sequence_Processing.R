@@ -5,8 +5,9 @@ library(tidyr)
 library(dplyr)
 library(vegan)
 library(indicspecies)
-library(tibble)
+library(tibble) 
 library(readxl)
+library(ggplot2)
 
 #All meta data from 12 sites with bags collected
 Bag_Site<-read_excel('Processed_data/All_Bag_Site_Info.xlsx')
@@ -34,10 +35,10 @@ Blast_ID<-Blast_ID%>%
 
 
 #funguild output
-AM <- read_excel("~/ABS_FIRE/Fire_Decomp_Nuts/Funguild/AM.xlsx")
-Ecto <- read_excel("~/ABS_FIRE/Fire_Decomp_Nuts/Funguild/Ecto.xlsx")
-Path<- read_excel("~/ABS_FIRE/Fire_Decomp_Nuts/Funguild/Path.xlsx")
-Sap<- read_excel("~/ABS_FIRE/Fire_Decomp_Nuts/Funguild/Sap.xlsx")
+AM <- read_excel("Funguild/AM.xlsx")
+Ecto <- read_excel("Funguild/Ecto.xlsx")
+Path<- read_excel("Funguild/Path.xlsx")
+Sap<- read_excel("Funguild/Sap.xlsx")
 
 
 #taxonomy table
