@@ -1,155 +1,93 @@
+# download and load packages for reading and managing data
+# install.packages('tidyverse')
+library(tidyverse)
+library(readr)
+library(tibble)
 
-#LOAD LIBRARARIES
-library(forcats)
-library(tidyr)
-library(dplyr)
+setwd('~/R/Ecology_Workshop/rawdata')
+
+# read data files
+# metadata (note where you saved the files, you might need to change the path)
+meta <- read_tsv('meta_with_worldclim.tsv')
+soil <- read_csv('rawdata/hwsdvars.csv')
+# community table
+otu <- read_delim('OTU_table_SOB.csv', delim=';')
+# funguild output
+ecm <- read_tsv('rawdata/funguild_ecm.tsv')
+path <- read_tsv('rawdata/funguild_path.tsv')
+sap <- read_tsv('rawdata/funguild_sap.tsv')
+# taxonomy table
+tax <- read_delim('rawdata/Taxa_table_SOB.csv', delim=';') 
+
+# add available guild information to taxonomy table
+tax %>% 
+  mutate(across(Kingdom:Species, ~gsub('^[a-z]\\_\\_', '', .)), 
+         guild = case_when(Genus %in% ecm$genus ~ 'ectomycorrhizal', 
+                           Genus %in% path$genus ~ 'pathogenic', 
+                           Genus %in% sap$genus ~ 'saprotrophic')) -> tax
+
+# transpose community table, to sample-taxon, for vegan functions
+otu %>% 
+  column_to_rownames('OTU_ID') %>% 
+  t() -> mat
+
+
+# load vegan library for betadiversity analyses
 library(vegan)
-library(indicspecies)
-library(tibble) 
-library(readxl)
-library(ggplot2)
-
-#All meta data from 12 sites with bags collected
-Bag_Site<-read_excel('Processed_data/All_Bag_Site_Info.xlsx')
-
-Bag_Site<-left_join(Bag_Site, Bag_Site%>%
-   filter(!is.na(Pair))%>%
-   select(Site,Pair)%>%
-  unique()%>%
-  group_by(Pair) %>%
-  summarize(Site_Pairs = paste(Site, collapse = "_")))
-
-
-#import Blast ID df and clean data
-Blast_ID<-read_excel('Raw_data/Updated_Data/ABS.MER.fielddata.Feb.2023_Site.Info_AF.xlsx')
-Blast_ID$Site= sub(c('ABS00|ABS0'),'',Blast_ID$Site)
-Blast_ID$sample_ID<-as.character(Blast_ID$sample_ID)
-Blast_ID$sample_ID<-sub(c("-"),".",Blast_ID$sample_ID)
-Blast_ID$sample_ID<-sub(c("-"),".",Blast_ID$sample_ID)
-names(Blast_ID)[9]<-'Veg_Class_Abv'
-
-Blast_ID<-Blast_ID%>%
-  dplyr::mutate(Regime = paste(Interval, Severity, sep = "_"))%>%
-  #add the pairs of thee site into the df
-  left_join(Bag_Site %>% select(Site, Site_Pairs), by = "Site",relationship = "many-to-many")
-
-
-#funguild output
-AM <- read_excel("Funguild/AM.xlsx")
-Ecto <- read_excel("Funguild/Ecto.xlsx")
-Path<- read_excel("Funguild/Path.xlsx")
-Sap<- read_excel("Funguild/Sap.xlsx")
-
-
-#taxonomy table
-otu<-read.csv('Raw_data/Updated_Data/demultiplexed.cleaned.combined.cf.fasta.blast.i97.a95.csv')
-#remove first three rows that do not have taxonomy ids and 2 rows with totals and sample counts 
-otu<-otu[-c(1:3),-c(2:3) ]
-
-tax <- otu %>%
-  separate(taxonomy, into = c("Percentage", "Species_Name", "Accession", "SH_ID", "Reference", "Taxonomy_Details"), sep = "\\|", extra = "drop") %>%
-  separate(Taxonomy_Details, into = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"), sep = ";") %>%
-  select(SH_ID:Species)%>%
-  mutate(across(Kingdom:Species, ~ gsub('^[a-z]__', '', .)),
-  guild = case_when(Genus %in% Ecto$Genus ~ 'ectomycorrhizal', 
-                    Genus %in% AM$Genus ~ 'arbuscular_mycorrhizal', 
-                    Genus %in% Path$Genus ~ 'pathogenic', 
-                    Genus %in% Sap$Genus ~ 'saprotrophic'))
-# any kingdom-to-genus unclassified, change to NA
-tax[tax %in% grep('unclassified', tax, value=T)] <- NA
-# any species unclassified, change to NA
-tax[tax %in% grep('_sp$', tax, value=T)] <- NA
-
-#change first col name to something easy
-names(otu)[1]<-'SH_ID'
-
-# transpose community table, to sample-taxon, for vegan functions and remove taxonomy col
-otu%>%
-  select(-last_col())%>%
-  remove_rownames()%>%
-  column_to_rownames("SH_ID")%>%
-  t()-> mat
 
 # assess variation in sampling effort, plotting sample effort curves
 temp <- rarecurve(mat, step=1000, tidy=TRUE)
-Blast_ID%>%
-left_join( temp %>% rename( sample_ID=Site))%>% 
-  #filter(Site %in% c( 50:63))%>%
-  ggplot(aes(x=Sample, y=Species, colour=as.factor(transect), group=sample_ID)) + 
+left_join(meta, temp %>% rename(SampleID=Site)) %>% 
+  ggplot(aes(x=Sample, y=Species, colour=site_code, group=SampleID)) + 
   geom_line() + 
-  facet_wrap(~as.numeric(Site))
+  facet_wrap(~site_code)
 
-
-
-# check variation in sample effort, looking for break points WHAT DOES THIS MEAN
+# check variation in sample effort, looking for break points
 hist(log10(rowSums(mat)))
-sort(rowSums(mat))[1:63]
-
+sort(rowSums(mat))[1:25]
 
 # rarefy the community matrix, using an arbitrary cut-off
-#Im not going to do this here though because it isnt needed
-# temp<-rrarefy(mat, 5000)
-# matr <- temp[rowSums(temp)==5000, ]
-# dim(matr)
-
+temp<-rrarefy(mat, 5000)
+matr <- temp[rowSums(temp)==5000, ]
+dim(matr)
 
 # prepare our data for betadiversity analyses:
 # 1 - focus analysis on ectomycorrhizal fungal taxa (create vector of OTU ids)
 # 2 - join the community table with our metadata table (need to also modify the community table so that it can be joined)
-ecm_otus <- filter(tax, guild=='ectomycorrhizal')$SH_ID
-dat_ecm <- left_join(Blast_ID,  mat %>% 
+ecm_otus <- filter(tax, guild=='ectomycorrhizal')$OTU_ID
+left_join(meta, mat %>% 
             as.data.frame() %>% 
             dplyr::select(ecm_otus) %>% # just ecto OTUs
-            rownames_to_column('sample_ID'))
-
-#this is now only looking at the 12 sites I have selected
-dat_ecm_12_site<-dat_ecm%>% filter(!is.na(Site_Pairs))
-
+            rownames_to_column('SampleID')) -> dat_ecm
 
 # first analysis - indicator species analysis 
-# identify OTUs that are overrepresented in samples coming from one or more groups of veg class
-multipatt(dat_ecm_12_site %>% select(starts_with('SH')), # first argument is the community table, select only those columns
-          dat_ecm_12_site$Site_Pairs) -> res
+# identify OTUs that are overrepresented in samples coming from one or more groups of site_code
+library(indicspecies)
+multipatt(dat_ecm %>% select(starts_with('OTU_')), # first argument is the community table, select only those columns
+          dat_ecm$site_code) -> res
 summary(res)
 
 # to visualise differences in taxonomic composition, using output from multipatt()
 # first prepare the data in the res object so that it can be joined with taxonomic info
-# output is only those otus significant for one or more pairs
-out <- res[['sign']] %>% #what does this do?
+# output is only those otus significant for one or more site_codes
+out <- res[['sign']] %>% 
   filter(p.value <= 0.05) %>% 
-  rownames_to_column('SH_ID') %>% 
+  rownames_to_column('OTU_ID') %>% 
   pivot_longer(cols=starts_with('s.'), names_to='group', values_to='value') %>% 
   filter(value==1) %>% 
   mutate(site_code = gsub('^s.', '', group))
 # then join with the taxonomy table, then the relevant community data, 
 # and reorder the otu levels by decreasing abundance
-
-
-
-####I GET A MANY TO MANY WARNING HERE AND DONT KNOW WHY THE FIRST ROW IN BOTH DF's joins 
-head(out)
-
-temp<-dat_ecm_12_site %>% 
-  select(sample,sample_ID, Site_Pairs, starts_with('SH')) %>% 
-  pivot_longer(cols=starts_with('SH'), names_to='SH_ID', 
-               values_to='count')
-temp %>%
-  unique()%>%
-  filter(SH_ID == 'SH1278398.09FU')
-
-#Above is me trying to figure out why
-
 out <- left_join(out, tax) %>% 
-  left_join(dat_ecm_12_site %>% 
-              select(sample,sample_ID, Site_Pairs, starts_with('SH')) %>% 
-              pivot_longer(cols=starts_with('SH'), names_to='SH_ID', 
-                           values_to='count')) %>% # , relationship = "many-to-many" WARNing message here
-  mutate(OTU_ID = fct_reorder(SH_ID, count, max), 
-         Site_Pairs = as_factor(Site_Pairs))
-
+  left_join(dat_ecm %>% 
+              select(SampleID, site_code, starts_with('OTU_')) %>% 
+              pivot_longer(cols=starts_with('OTU_'), names_to='OTU_ID', 
+                           values_to='count')) %>% 
+  mutate(OTU_ID = fct_reorder(OTU_ID, count, max), 
+         site_code = as_factor(site_code))
 # finally produce the barplot
 out %>% 
-  ggplot(aes(x=Site_Pairs, y=count, fill=Order, text=SH_ID)) + # text aesthetic is for the ggplotly visualisation below
+  ggplot(aes(x=site_code, y=count, fill=Order, text=OTU_ID)) + # text aesthetic is for the ggplotly visualisation below
   geom_bar(stat='identity', position=position_fill()) + 
   scale_x_discrete(drop=FALSE) + 
   scale_fill_brewer(palette='Set3') + 
@@ -157,30 +95,18 @@ out %>%
   labs(y='Percentage') + 
   theme_bw() -> p1
 p1
-
 # use this next lines to interactively get OTU IDs
 plotly::ggplotly(p1)
-#######################
 
-
-####next analysis#######
 
 # next analysis - permanova
 # extract the community table, save as a new object
-mat_ecm <- dat_ecm %>% select(starts_with('SH'))
-
-rows_all_zero<-which(apply(mat_ecm, 1, function(row) all(row == 0)))
-
-zero_value_rows<-mat_ecm[rows_all_zero,]
-
-mat_ecm<-mat_ecm[-rows_all_zero,]
-
-dat_ecm<-dat_ecm[-rows_all_zero,]
+mat_ecm <- dat_ecm %>% select(starts_with('OTU_'))
 
 # run three permanovas, each with a different distance index / raw data input
-adonis2(mat_ecm ~ dat_ecm$sample, data=dat_ecm, distance='bray', add=TRUE)
-adonis2(mat_ecm ~ sample, data=dat_ecm, distance='bray', binary=TRUE, add=TRUE)
-adonis2(mat_ecm ~ sample, data=dat_ecm, distance='robust.aitchison', add=TRUE)
+adonis2(mat_ecm ~ site_name, data=dat_ecm, distance='bray', add=TRUE)
+adonis2(mat_ecm ~ site_name, data=dat_ecm, distance='bray', binary=TRUE, add=TRUE)
+adonis2(mat_ecm ~ site_name, data=dat_ecm, distance='robust.aitchison', add=TRUE)
 
 # for more distance/similarity indices, look at:
 ?dist
@@ -312,7 +238,3 @@ anova(capscale(mat_ecm ~ tmean + srad + prec +
 anova(capscale(mat_ecm ~ long + lat + PCNM1 + PCNM2 + PCNM3 + PCNM10 + PCNM12 + PCNM9 + PCNM13 + PCNM4 +
                  Condition(tmean + srad + prec + site_code), data=temp, 
                distance='robust.aitchison'))
-
-
-
-

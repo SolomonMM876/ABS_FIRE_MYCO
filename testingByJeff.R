@@ -7,6 +7,7 @@ library(DHARMa)
 library(car)
 library(emmeans)
 library(readxl)
+
 Bag_Site<-read_excel('Processed_data/All_Bag_Site_Info.xlsx')
 Myc_Weight<-Bag_Site%>%
   select(Site,Transect,Location,myc)%>%
@@ -16,9 +17,7 @@ Myc_Weight<-Bag_Site%>%
   group_by(Site,Transect, Location_Group)%>%
   mutate(sum_myc = sum(myc),
          whats_left= sum_myc-2.5)
-#removing outliers
-Bag_Site$log10_myc_bag_yield_est[c(14,26)]<-NA
-Bag_Site$myc_bag_yield_est[c(14,26)]<-NA
+
 #both rows recorded 0 biomass because of harvest issue
 #Removed row 14 because both bags were found out of the ground
 #Removed row 26 because no recorded biomass
