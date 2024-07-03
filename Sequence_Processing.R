@@ -24,14 +24,16 @@ Bag_Site<-left_join(Bag_Site, Bag_Site%>%
 Blast_ID<-read_excel('Raw_data/Updated_Data/ABS.MER.fielddata.Feb.2023_Site.Info_AF.xlsx')
 Blast_ID$Site= sub(c('ABS00|ABS0'),'',Blast_ID$Site)
 Blast_ID$sample_ID<-as.character(Blast_ID$sample_ID)
+Blast_ID$transect<-as.character(Blast_ID$transect)
 Blast_ID$sample_ID<-sub(c("-"),".",Blast_ID$sample_ID)
 Blast_ID$sample_ID<-sub(c("-"),".",Blast_ID$sample_ID)
 names(Blast_ID)[9]<-'Veg_Class_Abv'
 
 Blast_ID<-Blast_ID%>%
   dplyr::mutate(Regime = paste(Interval, Severity, sep = "_"))%>%
+  rename(Transect=transect)%>%
   #add the pairs of thee site into the df
-  left_join(Bag_Site %>% select(Site, Site_Pairs), by = "Site",relationship = "many-to-many")
+  left_join(Bag_Site %>% select(Site,Transect, Site_Pairs)%>% unique(), by = c("Site","Transect"))
 
 
 #funguild output
@@ -75,7 +77,7 @@ temp <- rarecurve(mat, step=1000, tidy=TRUE)
 Blast_ID%>%
 left_join( temp %>% rename( sample_ID=Site))%>% 
   #filter(Site %in% c( 50:63))%>%
-  ggplot(aes(x=Sample, y=Species, colour=as.factor(transect), group=sample_ID)) + 
+  ggplot(aes(x=Sample, y=Species, colour=as.factor(Transect), group=sample_ID)) + 
   geom_line() + 
   facet_wrap(~as.numeric(Site))
 
@@ -123,25 +125,9 @@ out <- res[['sign']] %>% #what does this do?
   mutate(site_code = gsub('^s.', '', group))
 # then join with the taxonomy table, then the relevant community data, 
 # and reorder the otu levels by decreasing abundance
-
-
-
-####I GET A MANY TO MANY WARNING HERE AND DONT KNOW WHY THE FIRST ROW IN BOTH DF's joins 
-head(out)
-
-temp<-dat_ecm_12_site %>% 
-  select(sample,sample_ID, Site_Pairs, starts_with('SH')) %>% 
-  pivot_longer(cols=starts_with('SH'), names_to='SH_ID', 
-               values_to='count')
-temp %>%
-  unique()%>%
-  filter(SH_ID == 'SH1278398.09FU')
-
-#Above is me trying to figure out why
-
 out <- left_join(out, tax) %>% 
   left_join(dat_ecm_12_site %>% 
-              select(sample,sample_ID, Site_Pairs, starts_with('SH')) %>% 
+              select(Site,Transect, sample,sample_ID, Site_Pairs, starts_with('SH')) %>% 
               pivot_longer(cols=starts_with('SH'), names_to='SH_ID', 
                            values_to='count')) %>% # , relationship = "many-to-many" WARNing message here
   mutate(OTU_ID = fct_reorder(SH_ID, count, max), 
@@ -178,10 +164,11 @@ mat_ecm<-mat_ecm[-rows_all_zero,]
 dat_ecm<-dat_ecm[-rows_all_zero,]
 
 # run three permanovas, each with a different distance index / raw data input
-adonis2(mat_ecm ~ dat_ecm$sample, data=dat_ecm, distance='bray', add=TRUE)
+adonis2(mat_ecm ~ Site, data=dat_ecm, distance='bray', add=TRUE)
 adonis2(mat_ecm ~ sample, data=dat_ecm, distance='bray', binary=TRUE, add=TRUE)
 adonis2(mat_ecm ~ sample, data=dat_ecm, distance='robust.aitchison', add=TRUE)
 
+table(dat_ecm$Site)
 # for more distance/similarity indices, look at:
 ?dist
 ?vegdist
@@ -191,20 +178,20 @@ adonis2(mat_ecm ~ sample, data=dat_ecm, distance='robust.aitchison', add=TRUE)
 ?decostand
 
 # a redundancy analysis (constrained PCA) - ordination result is poor, don't interpret this
-rda1 <- rda(mat_ecm ~ site_code, data=dat_ecm)
+rda1 <- rda(mat_ecm ~ dat_ecm$sample, data=dat_ecm)
 plot(rda1)
 
 # a constrained analysis of principal coordinates using bray-curtis distances - ordination result is better, still some skew on the top of the y-axis
-cap1 <- capscale(mat_ecm ~ site_code, data=dat_ecm, distance='bray', add=TRUE)
+cap1 <- capscale(mat_ecm ~ dat_ecm$sample, data=dat_ecm, distance='bray', add=TRUE)
 plot(cap1)
 
 # try the same but with presence-absence instead of raw counts - still some skew but better
 cap1 <- capscale(decostand(mat_ecm, method='pa') ~ 
-                   site_code, data=dat_ecm, distance='bray', add=TRUE)
+                   dat_ecm$sample, data=dat_ecm, distance='bray', add=TRUE)
 plot(cap1)
 
 # try a different distance index - result is quite good
-cap1 <- capscale(mat_ecm ~ site_code, data=dat_ecm, distance='robust.aitchison', add=TRUE)
+cap1 <- capscale(mat_ecm ~ dat_ecm$sample, data=dat_ecm, distance='robust.aitchison', add=TRUE)
 plot(cap1)
 cap1 # summary of inertia
 cap1$CCA$eig/cap1$tot.chi # proportion of variation associated with each axis

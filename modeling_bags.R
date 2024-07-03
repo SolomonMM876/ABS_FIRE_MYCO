@@ -10,6 +10,10 @@ library(dplyr)
 
 Bag_Site<-read_excel('Processed_data/All_Bag_Site_Info.xlsx')
 
+Bag_Site<-Bag_Site%>%
+  mutate(Regime = paste(Fire.Interval, Fire.Severity, sep = "_"))
+  
+
 
 
 Myc_Weight<-Bag_Site%>%
@@ -109,33 +113,90 @@ plot(m8)
 qqPlot(resid(m8))
 r2(m8)
 
+grouped_Bag_Site <- Bag_Site %>%
+  group_by(Fire.Interval) %>%
+  summarise(
+    mean_yield = mean(10^log10_Second_Weight_bag_yield_est, na.rm = TRUE),
+    sd_yield = sd(10^log10_Second_Weight_bag_yield_est, na.rm = TRUE),
+    count = n()
+  )
+###
+dat_text <- data.frame(
+  label = c("Fire Interval = Pr(>F) 0.06632 ", ""),
+  Fire.Interval = c('Long', 'Short'))
+
+
+
+
 Bag_Site%>%
-  ggplot(aes(x=Site, y=myc_bag_yield_est))+
+  ggplot(aes(x=Site, y=10^log10_Second_Weight_bag_yield_est ))+
   geom_col(aes(fill=Transect, color= Location), position = "dodge") +
   facet_grid(~Fire.Interval,  scales = "free_x", )+
-  # geom_text(aes(label = beads, y = myc_bag_yield_est + 0.05, group = interaction(Location,Transect)), position = position_dodge(width = 1), 
-  #           color = 'black',  size = 4)+
-theme(legend.position = 'none')
-#alpha = mass_loss
-#+
-  # # Add mean points
-  # geom_point(data = variation_by_site, aes(x = as.factor(Site), y = mean_yield), 
-  #            color = 'red', size = 3) +
-  # # Add error bars for standard deviation
-  # geom_errorbar(data = variation_by_site, 
-  #               aes(x = as.factor(Site),y=mean_yield, ymin = mean_yield - sd_yield, 
-  #                   ymax = mean_yield + sd_yield), 
-  #               width = 0.2, color = 'red')
+theme(legend.position = 'none')+
+# # Add mean points
+# geom_point(data = variation_by_site, aes(x = as.factor(Site), y = mean_yield),
+#            color = 'red', size = 3) +
+# # Add error bars for standard deviation
+# geom_errorbar(data = variation_by_site,
+#               aes(x = as.factor(Site),y=mean_yield, ymin = mean_yield - sd_yield,
+#                   ymax = mean_yield + sd_yield),
+#               width = 0.2, color = 'red')
 ggplotly(p)
 
-hist(log10(Bag_Site$myc_bag_yield_est))
+hist((Bag_Site$log10_Second_Weight_bag_yield_est))
 
-Bag_Site%>%
-  ggplot(aes(x=Fire.Interval, y= myc_bag_yield_est))+
-  geom_col(aes(Fill=Fire.Interval))+theme_minimal()
+Bag_Site %>%
+  ggplot(aes(y = 10^log10_Second_Weight_bag_yield_est, x = Fire.Interval)) +
+  geom_boxplot(aes(), width = 0.1, fill = c('Dark Green', 'Brown')) +
+  geom_point(aes(fill = Fire.Interval), alpha = 0.5, size = 2) +
+  annotate("text", x = 0.5, y = Inf, label = 'Fire Interval = Pr(>F) 0.06632 ', 
+           vjust = 1.5, hjust = -0.1, size = 4) + # Adjust x, y, vjust, and hjust to position the text
+  labs(x = 'Fire Interval', y = 'Biomass Production (mg)') +
+  theme(
+    axis.title.x = element_text(size = rel(1.5)),   
+    axis.title.y = element_text(size = rel(1.5), angle = 90),
+    axis.text.x = element_text(size = rel(2)), # Increase the size of x-axis text
+    axis.text.y = element_text(size = rel(1.5))
+  ) +
+  theme_minimal()
 
 
 
+Bag_Site %>%
+  ggplot(aes(y = 10^log10_Second_Weight_bag_yield_est, x = Site)) +
+  geom_boxplot(aes(fill = Fire.Interval), width = 0.2) +
+  geom_point(aes(fill = Fire.Interval), alpha = 0.5, size = 2) +
+  scale_fill_manual(values = c('Long' = 'Dark Red', 'Short' = 'Orange')) +
+  facet_grid(~Fire.Interval, scales = "free_x") +
+  geom_text(data = dat_text, mapping = aes(x = 0, y = Inf, label = label),
+            vjust = 1.5, hjust = -0.1, size = 3) + # Specify the facet for annotation
+  labs(x = 'Fire Interval', y = 'Biomass Production (mg)') +
+  theme(
+    axis.title.x = element_text(size = rel(1.5)),   
+    axis.title.y = element_text(size = rel(1.5), angle = 90),
+    axis.text.x = element_text(size = rel(2)), 
+    axis.text.y = element_text(size = rel(1.5)),
+    legend.position = "none" # Remove the legend
+  ) +
+  theme_minimal()
+
+Bag_Site %>%
+  ggplot(aes(y = 10^log10_Second_Weight_bag_yield_est)) +
+  geom_boxplot(aes(data = grouped_Bag_Site, x = Fire.Interval, fill = Fire.Interval), width = 0.2) +
+  geom_point(aes(x = Site, fill = Fire.Interval), alpha = 0.5, size = 2) +
+  scale_fill_manual(values = c('Long' = 'Dark Red', 'Short' = 'Orange')) +
+  facet_grid(~Fire.Interval, scales = "free_x") +
+  geom_text(data = dat_text, mapping = aes(x = 0, y = Inf, label = label),
+            vjust = 1.5, hjust = -0.1, size = 3) + # Specify the facet for annotation
+  labs(x = 'Fire Interval', y = 'Biomass Production (mg)') +
+  theme(
+    axis.title.x = element_text(size = rel(1.5)),   
+    axis.title.y = element_text(size = rel(1.5), angle = 90),
+    axis.text.x = element_text(size = rel(2)), 
+    axis.text.y = element_text(size = rel(1.5)),
+    legend.position = "none" # Remove the legend
+  ) +
+  theme_minimal()
 
 
 
