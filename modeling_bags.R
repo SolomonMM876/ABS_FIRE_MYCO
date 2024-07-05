@@ -10,20 +10,9 @@ library(dplyr)
 
 Bag_Site<-read_excel('Processed_data/All_Bag_Site_Info.xlsx')
 
-Bag_Site<-Bag_Site%>%
-  mutate(Regime = paste(Fire.Interval, Fire.Severity, sep = "_"))
-  
-
-
-
-Myc_Weight<-Bag_Site%>%
-  select(Site,Transect,Location,myc)%>%
-  mutate(Location_Group = case_when(
-    Location %in% c(3, 16,16.1, 16.2) ~ "3_and_16",
-    Location %in% c(33, 47) ~ "33_and_47"))%>%
-  group_by(Site,Transect, Location_Group)%>%
-  mutate(sum_myc = sum(myc),
-         whats_left= sum_myc-2.5)
+Bag_Site_Short<-Bag_Site%>%
+  mutate(Regime = paste(Fire.Interval, Fire.Severity, sep = "_"))%>%
+  dplyr::select(Site,Transect,Bray.P:Dead.Tree.Canopy.Cover_perc,Pair,log10_Second_Weight_bag_yield_est:Regime)
 
 
 
@@ -41,12 +30,11 @@ Bag_Site <- Bag_Site[-x, ]  # drop those rows
 
 
 
-m1<-lmer(log10_myc_bag_yield_est~Fire.Severity+ Fire.Interval + (1|Site/Transect) , data=Bag_Site)
+m1<-lmer(log10_Second_Weight_bag_yield_est~Fire.Severity+ Fire.Interval + (1|Site/Transect) , data=Bag_Site)
 #checking to see if second round of weighing changed anything
-m8<-lmer(log10_Second_Weight_bag_yield_est ~Fire.Severity+ Fire.Interval + (1|Site/Transect) , data=Bag_Site)
 m2<-lmer(Bray.P~   Fire.Interval + Fire.Severity + (1|Site) , data=Bag_Site)
 m3<-lmer(NH4~   Fire.Interval + Fire.Severity + (1|Site) , data=Bag_Site)
-m4<-lmer(NO3~   Fire.Interval  * Fire.Severity+ (1|Site) , data=Bag_Site)
+m4<-lmer(NO3~   Fire.Interval  + Fire.Severity+ (1|Site) , data=Bag_Site)
 m5<-lmer(NO3~   log10_myc_bag_yield_est + (1|Site) , data=Bag_Site)
 m6<-lmer(NH4~   log10_myc_bag_yield_est + (1|Site) , data=Bag_Site)
 m7<-lmer(Bray.P~   log10_myc_bag_yield_est + (1|Site) , data=Bag_Site)
@@ -57,13 +45,22 @@ m7<-lmer(Bray.P~   log10_myc_bag_yield_est + (1|Site) , data=Bag_Site)
 #1
 summary(m1)
 #this is how much more the short fire interval increases myco biomass
-(10^0.15274)-.05
+(10^0.13700)-0.095
 Anova(m1,test='F')
 #residual vs fitted plot 
 plot(m1)
 qqPlot(resid(m1))
 # Bag_Site_Outliers<-Bag_Site[c(14,26),]
-pairs(emmeans(m1, ~ Fire.Severity+ Fire.Interval))
+pairs(emmeans(m1, ~ Fire.Interval))
+emm_Interval<-as.data.frame(emmeans(m1, ~Fire.Interval))
+emmip(m1, ~Fire.Interval)
+ggplot(emm_Interval, aes(x = Fire.Interval, y = 10^emmean+.095)) +
+  geom_point(aes(),size=4) +
+  geom_errorbar(aes(ymin = 10^lower.CL+.095, ymax = 10^upper.CL+.095), width = 0.2 ) +
+  labs(x = "Fire Interval", y = "Estimated Marginal Mean", title = "Estimated Marginal Means by Fire Interval") +
+    annotate("text", x = 1.5, y = Inf, label = "P = 0.066", hjust = 1.1, vjust = 1.1, size = 5)+
+  theme_minimal()
+
 r2(m1)
 #2 (BrayP~Regime) Not sig
 summary(m2)
@@ -83,10 +80,11 @@ r2(m3)
 #Interval trend t= -1.807, p= .1042
 #High Long - Low Short   df=8.02   t.ratio=2.824  p= 0.0850
 summary(m4)
-Anova(m4,test='F')
+NO3_Anova<-Anova(m4,test='F')
 plot(m4)
 qqPlot(resid(m4))
 pairs(emmeans(m4, ~ Fire.Severity+ Fire.Interval))
+
 r2(m4)
 #5 (No3~Biomass)
 summary(m5)
@@ -122,10 +120,10 @@ grouped_Bag_Site <- Bag_Site %>%
   )
 ###
 dat_text <- data.frame(
-  label = c("Fire Interval = Pr(>F) 0.06632 ", ""),
+  label = c("Fire Interval = Pr(>F) 0.066 ", ""),
   Fire.Interval = c('Long', 'Short'))
 
-
+Bag_Site$Site = factor(Bag_Site$Site, levels = c("5", "7", "8", "10", "11", "12", "26", "29", "31", "34", "49", "56"))
 
 
 Bag_Site%>%
@@ -133,6 +131,8 @@ Bag_Site%>%
   geom_col(aes(fill=Transect, color= Location), position = "dodge") +
   facet_grid(~Fire.Interval,  scales = "free_x", )+
 theme(legend.position = 'none')+
+    labs(x = 'Fire Interval', y = 'Biomass Production (mg)') 
+
 # # Add mean points
 # geom_point(data = variation_by_site, aes(x = as.factor(Site), y = mean_yield),
 #            color = 'red', size = 3) +
@@ -146,62 +146,86 @@ ggplotly(p)
 hist((Bag_Site$log10_Second_Weight_bag_yield_est))
 
 Bag_Site %>%
-  ggplot(aes(y = 10^log10_Second_Weight_bag_yield_est, x = Fire.Interval)) +
-  geom_boxplot(aes(), width = 0.1, fill = c('Dark Green', 'Brown')) +
+  ggplot(aes(y = 10^log10_Second_Weight_bag_yield_est+.095, x = Fire.Interval)) +
+  geom_boxplot(aes(), width = 0.1, fill = c('Dark Red', 'Orange')) +
   geom_point(aes(fill = Fire.Interval), alpha = 0.5, size = 2) +
-  annotate("text", x = 0.5, y = Inf, label = 'Fire Interval = Pr(>F) 0.06632 ', 
-           vjust = 1.5, hjust = -0.1, size = 4) + # Adjust x, y, vjust, and hjust to position the text
+  annotate("text", x = 0.5, y = Inf, label = 'Fire Interval = Pr(>F) 0.066 ', 
+           vjust = 1.5, hjust = -3, size = 4) + # Adjust x, y, vjust, and hjust to position the text
   labs(x = 'Fire Interval', y = 'Biomass Production (mg)') +
-  theme(
+  theme( 
     axis.title.x = element_text(size = rel(1.5)),   
     axis.title.y = element_text(size = rel(1.5), angle = 90),
     axis.text.x = element_text(size = rel(2)), # Increase the size of x-axis text
     axis.text.y = element_text(size = rel(1.5))
   ) +
+   guides(fill="none")+
   theme_minimal()
+
+Bag_Site %>%
+  ggplot(aes(y = 10^log10_Second_Weight_bag_yield_est+.095, x = Site,)) +
+  geom_boxplot(aes(fill= Fire.Interval), width = 0.1) +
+    scale_fill_manual(values = c("Long" = "darkred", "Short" = "orange")) +
+  geom_point(aes(fill = Fire.Interval), alpha = 0.5, size = 2) +
+  facet_grid(~Pair, scales = "free_x") +
+  annotate("text", x = 0.5, y = Inf, label = 'Fire Interval = Pr(>F) 0.066 ', 
+           vjust = 1.5, hjust = -3, size = 4) + # Adjust x, y, vjust, and hjust to position the text
+  labs(x = 'Fire Interval', y = 'Biomass Production (mg)') +
+  theme( 
+    axis.title.x = element_text(size = rel(1.5)),   
+    axis.title.y = element_text(size = rel(1.5), angle = 90),
+    axis.text.x = element_text(size = rel(2)), # Increase the size of x-axis text
+    axis.text.y = element_text(size = rel(1.5))
+  ) +
+   #guides(fill="none")+
+  theme_minimal()
+
+Bag_Site %>%
+  ggplot(aes(y = 10^log10_Second_Weight_bag_yield_est + 0.095, x = Site, fill = Fire.Interval)) +
+  geom_boxplot(width = 0.1) +
+  scale_fill_manual(values = c("Long" = "darkred", "Short" = "orange")) +
+  geom_point(alpha = 0.5, size = 2) +
+  facet_grid(~Pair, scales = "free_x") +
+  annotate("text", x = 0.5, y = Inf, label = 'Fire Interval = Pr(>F) 0.066', 
+           vjust = 1.5, hjust = -0.1, size = 4) +
+  labs(x = 'Site', y = 'Biomass Production (mg)') +
+  theme_minimal() +
+  theme( 
+    axis.title.x = element_text(size = rel(1.5)),   
+    axis.title.y = element_text(size = rel(1.5), angle = 90),
+    axis.text.x = element_text(size = rel(2)), 
+    axis.text.y = element_text(size = rel(1.5))
+  ) +
+  geom_smooth(method = "lm", aes(group = Pair), se = FALSE, color = "blue") +
+  stat_smooth(method = "lm", aes(group = Pair), se = FALSE, color = "blue", 
+              geom = "text", label = after_stat(expr(paste("R^2 = ", round(summary(lm(y ~ x))$r.squared, 2)))), 
+              vjust = -0.5, size = 3)
+
 
 
 
 Bag_Site %>%
-  ggplot(aes(y = 10^log10_Second_Weight_bag_yield_est, x = Site)) +
+  ggplot(aes(y = NO3, x =Fire.Interval))+
   geom_boxplot(aes(fill = Fire.Interval), width = 0.2) +
   geom_point(aes(fill = Fire.Interval), alpha = 0.5, size = 2) +
-  scale_fill_manual(values = c('Long' = 'Dark Red', 'Short' = 'Orange')) +
-  facet_grid(~Fire.Interval, scales = "free_x") +
-  geom_text(data = dat_text, mapping = aes(x = 0, y = Inf, label = label),
-            vjust = 1.5, hjust = -0.1, size = 3) + # Specify the facet for annotation
-  labs(x = 'Fire Interval', y = 'Biomass Production (mg)') +
+ scale_fill_manual(values = c('Long' = 'Dark Red', 'Short' = 'Orange')) +
+  #facet_grid(~Regime, scales = "free_x") +
+   # geom_text(data = NO3_Anova, mapping = aes(x = 0, y = Inf,label = `Pr(>F)`),
+   #           vjust = 1.5, hjust = -0.1, size = 3) + # Specify the facet for annotation
+  labs(x = 'Site', y = 'NO3 mg/kg') +
   theme(
     axis.title.x = element_text(size = rel(1.5)),   
     axis.title.y = element_text(size = rel(1.5), angle = 90),
     axis.text.x = element_text(size = rel(2)), 
     axis.text.y = element_text(size = rel(1.5)),
-    legend.position = "none" # Remove the legend
+    legend.position = "top" # Remove the legend
   ) +
-  theme_minimal()
-
-Bag_Site %>%
-  ggplot(aes(y = 10^log10_Second_Weight_bag_yield_est)) +
-  geom_boxplot(aes(data = grouped_Bag_Site, x = Fire.Interval, fill = Fire.Interval), width = 0.2) +
-  geom_point(aes(x = Site, fill = Fire.Interval), alpha = 0.5, size = 2) +
-  scale_fill_manual(values = c('Long' = 'Dark Red', 'Short' = 'Orange')) +
-  facet_grid(~Fire.Interval, scales = "free_x") +
-  geom_text(data = dat_text, mapping = aes(x = 0, y = Inf, label = label),
-            vjust = 1.5, hjust = -0.1, size = 3) + # Specify the facet for annotation
-  labs(x = 'Fire Interval', y = 'Biomass Production (mg)') +
-  theme(
-    axis.title.x = element_text(size = rel(1.5)),   
-    axis.title.y = element_text(size = rel(1.5), angle = 90),
-    axis.text.x = element_text(size = rel(2)), 
-    axis.text.y = element_text(size = rel(1.5)),
-    legend.position = "none" # Remove the legend
-  ) +
+    guides(fill="none")+
   theme_minimal()
 
 
 
 # Pairwise scatter plots to see relationships
-pairs(~ myc_bag_yield_est + FESM_severity +Bray.P + NH4 + NO3 + Total.P + Carbon + Nitrogen, data = Bag_Site)
+pairs(~ myc_bag_yield_est+Bray.P + NH4 + NO3 + Total.P + Carbon + Nitrogen, data = Bag_Site)
 
 
 

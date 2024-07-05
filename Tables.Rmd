@@ -1,0 +1,133 @@
+---
+title: "ABS_Fire"
+author: "Solomon Maerowitz-McMahan"
+date: "r Sys.Date()"
+output: word_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Inserting tables into Word
+
+To run this example rmarkdown file, make sure to place it in a folder where you have downloaded the pupae dataset ("pupae.csv")
+
+With a little example data and a few useful functions, we can easily create tables in Word. First, load the example data:
+```{r load_pupae_data}
+library(readxl)
+# read pupae data if you have not already
+Explan_Var_Regime <- read_excel("Processed_data/Explan_var_P_Regime.xlsx")
+
+
+###all this below is extra...ignore for now
+
+# Make a table of means and SD of the pupae data
+puptab <- summaryBy(Frass + PupalWeight ~ CO2_treatment + T_treatment,
+                         FUN=c(mean,sd), data=pupae, na.rm=TRUE)
+
+# It is more convenient to reorder the dataframe to have sd and mean
+# together.
+puptab <- puptab[,c("CO2_treatment","T_treatment",
+                    "Frass.mean","Frass.sd",
+                    "PupalWeight.mean","PupalWeight.sd")]
+
+
+# Give the columns short, easy to type names
+names(puptab) <- c("CO2","T","Frass","SD.1","PupalWeight","SD.2")
+
+# Round if the variable is 'double' (i.e. not integer or character)
+puptab <- as.data.frame(lapply(puptab,function(x)if(is.double(x))round(x,2)else x))
+
+# Convert temperature, which is a factor, to a character variable
+# (Factors don't work well with the data-reshaping that takes place in pixiedust)
+puptab$T <- as.character(puptab$T)
+```
+
+## Tables with kable
+We'll start with kable() from the knitr package. 
+
+```{r echo=TRUE}
+library(knitr)
+kable(Explan_Var_Regime, caption="Table 1. P values for the Explanitory Variables.")
+```
+'''
+### Renaming table columns with kable()
+```{r echo=TRUE}
+kable(Explan_Var_Regime, caption="Table 1. Summary stats for the pupae data, with new column names.", 
+      col.names=c("CO~2~ Treatment","Temperature","Frass","SD","Pupal Weight", "SD"))
+```
+
+```{r}
+
+```
+
+
+
+
+### Changing digits and column alignment with kable()
+```{r echo=TRUE, }
+kable(puptab, caption="Table 1. Summary stats for the pupae data.", 
+      col.names=c("CO~2~ Treatment","Temperature","Frass","SD","Pupal Weight", "SD"),
+      digits=1,
+      align=c('l','c','r')) # Values will be recycled to match number of columns
+```
+
+##Tables with pander
+Another function for formatting tables is pander(), from the pander package. 
+```{r  echo=TRUE}
+library(pander)
+pander(puptab, caption = "Table 1. Summary stats for the pupae data, in pander.")
+```
+
+### Rounding, cell alignmnet, and emphasis using pander()
+```{r  echo=TRUE}
+# cell and row emphasis are set before calling pander,
+# using functions that start with 'emphasize.':
+# emphasize.strong.rows,  emphasize.strong.cols,  emphasize.strong.cells,
+# emphasize.italics.rows, emphasize.italics.cols, emphasize.italics.cells
+emphasize.strong.cols(1)
+emphasize.italics.cells(which(puptab == "elevated", arr.ind = TRUE))
+pander(puptab, 
+       caption = "Table 1. Summary stats for the pupae data, with cell formatting in pander.",
+       # for justify, length must match number of columns
+       justify = c('left', 'center', 'right','right','right','right'),
+       round=3)
+```
+
+##Tables with pixiedust
+A third option for formatting tables is the pixiedust package. It uses a different syntax from those we've seen so far:
+```{r echo=TRUE}
+# pixiedust requires broom for table formatting
+# also loading tidyverse packages to ensure file knits properly 
+library(tidyverse)
+library(broom)
+library(pixiedust)
+
+dust(puptab) %>%
+  sprinkle_print_method("markdown")
+```
+
+### Adding emphasis and rounding with pixiedust
+Note that each change is specified as a separate 'sprinkle':
+```{r echo=TRUE}
+dust(puptab) %>%
+  sprinkle_print_method("markdown")  %>%
+  sprinkle(rows = c(2, 4), bold = TRUE) %>%
+  sprinkle(rows = c(3, 4), cols=c(1, 1), italic = TRUE) %>%
+  sprinkle(round = 1)
+```
+
+### Adding captions, changing column names, and replacing values with pixiedust
+Note that the caption argument is placed inside the dust function, and not as a separate sprinkle.
+```{r echo=TRUE}
+# Captions are added to the dust() function
+dust(puptab, caption="Table 1. Summary stats for the pupae data, formatted with pixiedust") %>%
+  # Note that identical column names are not allowed
+  sprinkle_colnames("CO2 Treatment","Temperature","Frass","Frass SD","Pupal Weight", "Weight SD") %>%
+  # Replacement must have the same length as what it replaces
+  sprinkle(cols = 1, replace = c("ambient", "ambient", "elevated", "elevated")) %>%
+  sprinkle_print_method("markdown")
+   
+```

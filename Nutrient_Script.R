@@ -13,7 +13,7 @@ library(ggrepel)
 
 
 ###Site Descriptions####
-Site_Info<-read_excel("Raw_data/fastfa_Site.Info.xlsx")
+Site_Info<-read_excel("Raw_data/Sequence/fastfa_Site.Info.xlsx")
 colnames(Site_Info)[3]<-'Site'
 colnames(Site_Info)[4]<-'Transect'
 Site_Info$Transect<-as.factor(Site_Info$Transect)
@@ -22,9 +22,9 @@ Site_Info$Site= sub(c('ABS0'), '',Site_Info$Site)
 
 #Bray_P####
 #Load data
-Bray_P <- lapply(c('Raw_Data/23-06-07 solomon bray -P samples lot1 2023.csv',
-                   'Raw_Data/23-06-08 solomon bray-P samples lot2.csv',
-                    'Raw_Data/23-06-09 solomon bray-p samples lot3.csv'),read.csv)
+Bray_P <- lapply(c('Raw_Data/Nutes/23-06-07 solomon bray -P samples lot1 2023.csv',
+                   'Raw_Data/Nutes/23-06-08 solomon bray-P samples lot2.csv',
+                    'Raw_Data/Nutes/23-06-09 solomon bray-p samples lot3.csv'),read.csv)
 #Clean
 Bray_P<-bind_rows(Bray_P, .id = "sample.ID")
 Bray_P$Sample.ID<-sub(c("b"),"",Bray_P$Sample.ID)
@@ -101,10 +101,10 @@ ggplot( aes(x=Site, y=Bray.P, alpha=Transect))+
 #N####
 #setwd("\\\\ad.uws.edu.au/dfshare/HomesCMB$/90957135/My Documents/ABS_FIRE/Fire_Decomp_Nuts")
 #import
-NH4NO3<-lapply(c('Raw_Data/23-06-13 solomon NH4NO3 LOT1.csv',
-                 'Raw_Data/23-06-13 solomon NH4NO3 LOT2.csv',
-                 'Raw_Data/23-06-15 solomon nh4no3 lot3 .csv',
-                 'Raw_Data/23-06-16 solomon NH4NO3 LOT4 LAST.csv'),read.csv)
+NH4NO3<-lapply(c('Raw_Data/Nutes/23-06-13 solomon NH4NO3 LOT1.csv',
+                 'Raw_Data/Nutes/23-06-13 solomon NH4NO3 LOT2.csv',
+                 'Raw_Data/Nutes/23-06-15 solomon nh4no3 lot3 .csv',
+                 'Raw_Data/Nutes/23-06-16 solomon NH4NO3 LOT4 LAST.csv'),read.csv)
 
 #clean and organize
 NH4NO3<-bind_rows(NH4NO3, .id = "sample.ID")
@@ -215,7 +215,7 @@ ggplot( aes(x=Site, y=NO3, alpha=Transect))+
 #Total_P####
 #setwd("\\\\ad.uws.edu.au/dfshare/HomesCMB$/90957135/My Documents/ABS_FIRE/Fire_Decomp_Nuts")
 #Load Data
-Total_P<-read.csv("Raw_Data/CSBP_Total_P.csv")
+Total_P<-read.csv("Raw_Data/Nutes/CSBP_Total_P.csv")
 names(Total_P)[6]<-'Transect'
 
 #clean and organize
@@ -285,7 +285,7 @@ Total_P_All%>%
 #Total_C+N####
 #setwd("\\\\ad.uws.edu.au/dfshare/HomesCMB$/90957135/My Documents/ABS_FIRE/Fire_Decomp_Nuts")
 #Load Data
-Total_CN<-read.csv("Raw_Data/CN SOIL SAMPLES_2.0.csv")
+Total_CN<-read.csv("Raw_Data/Nutes/CN SOIL SAMPLES_2.0.csv")
 
 colnames(Total_CN)[1]<-'Transect'
 colnames(Total_CN)[5]<-'Carbon'
@@ -329,7 +329,7 @@ Total_CN_All<-left_join(Total_CN,Site_Info, by = join_by(Site,Transect))
 #XRF P and S####
 #setwd("\\\\ad.uws.edu.au/dfshare/HomesCMB$/90957135/My Documents/ABS_FIRE/Fire_Decomp_Nuts")
 #load data
-XRF_S_P<-read_tsv('Raw_Data/All Sites.edit.txt', show_col_types = FALSE)
+XRF_S_P<-read_tsv('Raw_Data/Nutes/All Sites.edit.txt', show_col_types = FALSE)
 colnames(XRF_S_P)[2]<-'Transect'
 colnames(XRF_S_P)[6]<-'XRF_P'
 colnames(XRF_S_P)[8]<-'XRF_S'
@@ -419,7 +419,7 @@ rm(list = objects_to_remove)
 
 
 library(writexl)
-write_xlsx(Nutrients.Site, path='~/ABS_FIRE/ABS_FIRE_MYCO/Processed_data/Nutrients_Site_level.xlsx')
-write_xlsx(Nutrients.Sites.All, path='~/ABS_FIRE/ABS_FIRE_MYCO/Processed_data/Nutrients_Transect_level.xlsx')
+write_xlsx(Nutrients.Site, path='Processed_data/Nutrients_Site_level.xlsx')
+write_xlsx(Nutrients.Sites.All, path='Processed_data/Nutrients_Transect_level.xlsx')
 
 

@@ -12,7 +12,7 @@ library('tibble')
 
 
 #import data
-Site.info<-read_excel('Site.Info.xlsx')
+Site.info<-read_excel('Raw_data/Site_Data/Site.Info.xlsx')
 
 
 colnames(Site.info)[5]<-'lat'
@@ -30,7 +30,7 @@ sites <-as.data.frame(sites.ID[,c('lon','lat')])%>%
 #extract precipitation data
 
 ###this step takes a while
-Precip <- get_chirps(sites, dates = c("2021-01-01", "2023-10-02"), server = "ClimateSERV")
+Precip <- get_chirps(sites, dates = c("2023-10-01", "2024-03-10"), server = "ClimateSERV")
 
 #merge df's based on ID
 colnames(Precip)[1]<-'ID'
@@ -41,7 +41,7 @@ Sites_Precip<-full_join(sites.ID,Precip, by=c('ID','lon','lat'))
 
 #Tmax data from bom Katoomba
 
-Tmax<-read.csv('Tmax-Katoomba/IDCJAC0010_063039_1800_Data.csv')
+Tmax<-read.csv('C:/Users/90957135/OneDrive - Western Sydney University/ABS_FIRE/Tmax-Katoomba/IDCJAC0010_063039_1800_Data.csv')
 
 
 Tmax$date <- as.Date(with(Tmax, paste(Year, Month, Day,sep="-")), "%Y-%m-%d")

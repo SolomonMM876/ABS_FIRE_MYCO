@@ -10,30 +10,7 @@ library(readxl)
 library(ggplot2)
 
 
-#Enviromental data
-precip<-read_excel('Processed_data/Site_Precip.xlsx')
 
-Precip_Site<-precip%>%
-  select(Site,chirps,MonthYear)%>%
-  group_by(MonthYear,Site)%>%
-  summarise(Rain=mean(chirps), .groups = 'keep')%>%
-  distinct()%>%
-  ungroup()%>%
-  select(-MonthYear)%>%
-  group_by(Site)%>%
-  summarise(Rain=mean(Rain), .groups = 'keep')%>%
-  mutate(Site=gsub('ABS0|ABS00','',Site))
-
-
-Meta_Site <- read_excel("Processed_data/Site_Precip_Temp_Elv.xlsx")
-
-Meta_Site<-Meta_Site%>%
-  select(wc2.1_30s_elev,Annual_Temp,site)%>%
-  rename(Site=site,
-         elev= wc2.1_30s_elev)%>%
-  mutate(Site=gsub('ABS0|ABS00','',Site))#%>%
-#  left_join(Precip_Site)
-  
 
 #All meta data from 12 sites with bags collected
 Bag_Site<-read_excel('Processed_data/All_Bag_Site_Info.xlsx')
@@ -64,8 +41,7 @@ Blast_ID<-Blast_ID%>%
   left_join(Bag_Site %>% select(Site,Transect, Site_Pair)%>% unique(), by = c("Site","Transect"))%>%
   left_join(VEG_COVER_Transects)%>%
   left_join(Nutrients_Transects)%>%
-  select(-`Fire 3`,-`Interval (yrs)...16`,-`FESM severity category`)%>%
-  left_join(Meta_Site)
+  select(-`Fire 3`,-`Interval (yrs)...16`,-`FESM severity category`)
 
 
 #funguild output
@@ -104,28 +80,6 @@ otu%>%
   column_to_rownames("SH_ID")%>%
   t()-> mat
 
-# assess variation in sampling effort, plotting sample effort curves
-temp <- rarecurve(mat, step=1000, tidy=TRUE)
-Blast_ID%>%
-left_join( temp %>% rename( sample_ID=Site))%>% 
-  #filter(Site %in% c( 50:63))%>%
-  ggplot(aes(x=Sample, y=Species, colour=as.factor(Transect), group=sample_ID)) + 
-  geom_line() + 
-  facet_wrap(~as.numeric(Site))
-
-
-
-# check variation in sample effort, looking for break points WHAT DOES THIS MEAN
-hist(log10(rowSums(mat)))
-sort(rowSums(mat))[1:63]
-
-
-# rarefy the community matrix, using an arbitrary cut-off
-#Im not going to do this here though because it isnt needed
-# temp<-rrarefy(mat, 5000)
-# matr <- temp[rowSums(temp)==5000, ]
-# dim(matr)
-
 
 # prepare our data for betadiversity analyses:
 # 1 - focus analysis on ectomycorrhizal fungal taxa (create vector of OTU ids)
@@ -163,7 +117,7 @@ out <- res[['sign']] %>% #what does this do?
 # then join with the taxonomy table, then the relevant community data, 
 # and reorder the otu levels by decreasing abundance
 out <- left_join(out, tax) %>% 
-  left_join(dat_ecm %>% 
+  left_join(dat_ecm_12_site %>% 
               select(Site,Transect, sample,sample_ID, Interval, starts_with('SH')) %>% 
               pivot_longer(cols=starts_with('SH'), names_to='SH_ID', 
                            values_to='count')) %>% 
@@ -186,13 +140,12 @@ plotly::ggplotly(p1)
 #######################
 
 
-####next analysis#######
+###next analysis#######
 
 # next analysis - permanova
 # extract the community table, save as a new object
-mat_ecm <- dat_ecm %>% select(starts_with('SH'))
-# 
-rows_zero_na<-which(apply(dat_ecm, 1, function(row) all(row == 0)))
+mat_ecm <- dat_ecm_12_site %>% select(starts_with('SH'))
+# rows_zero_na<-which(apply(dat_ecm, 1, function(row) all(row == 0)))
 # 
 # zero_value_rows<-dat_ecm_3[rows_all_zero,]
 # 
@@ -201,34 +154,80 @@ rows_zero_na<-which(apply(dat_ecm, 1, function(row) all(row == 0)))
 # dat_ecm<-dat_ecm[-rows_all_zero,]
 
 # run three permanovas, each with a different distance index / raw data input
-adonis2(mat_ecm ~ Severity+Interval, data=dat_ecm, distance='bray', add=TRUE)
-adonis2(mat_ecm ~ Severity+Interval, data=dat_ecm, distance='bray', binary=TRUE, add=TRUE)
-adonis2(mat_ecm ~ Severity+Interval, data=dat_ecm, distance='robust.aitchison', add=TRUE)
 
-table(dat_ecm$Interval)
-# for more distance/similarity indices, look at:
-?dist
-?vegdist
-?labdsv::dsvdis
+adonis2(mat_ecm ~ Severity+Interval, data=dat_ecm_12_site, distance='robust.aitchison', add=TRUE)
 
-# for ways to standardise/transform the data prior to analysis, look at:
-?decostand
+table(dat_ecm_12_site$Interval)
 
-# a redundancy analysis (constrained PCA) - ordination result is poor, don't interpret this
-rda1 <- rda(mat_ecm ~ Interval, data=dat_ecm)
-plot(rda1)
 
-# a constrained analysis of principal coordinates using bray-curtis distances - ordination result is better, still some skew on the top of the y-axis
-cap1 <- capscale(mat_ecm ~ Interval, data=dat_ecm, distance='bray', add=TRUE)
-plot(cap1)
+#BELOW is a SHITTY work around and I am sorry
+mean_Bray.P <- mean(dat_ecm_12_site$Bray.P, na.rm = TRUE)
+mean_Total.P <- mean(dat_ecm_12_site$Total.P, na.rm = TRUE)
 
-# try the same but with presence-absence instead of raw counts - still some skew but better
-cap1 <- capscale(decostand(mat_ecm, method='pa') ~ 
-                   dat_ecm$Interval, data=dat_ecm, distance='bray', add=TRUE)
-plot(cap1)
+# Input the calculated means into the specified rows
+dat_ecm_12_site$Bray.P[4] <- mean_Bray.P
+dat_ecm_12_site$Total.P[19] <- mean_Total.P
+
+Nute_Veg<-dat_ecm_12_site%>%
+  select(Tree.Basal.Area_m2:Nitrogen,Fire.Interval,Fire.Severity)
+
+rows_zero_na <- which(apply(Nute_Veg, 1, function(row) all(row == 0) | any(is.na(row))))
+
+dat_ecm_12<-dat_ecm_12_site%>%
+  select(Tree.Basal.Area_m2:SH1205826.09FU)
+ colnames(dat_ecm_12_site)
+
+cap.all <- capscale(dat_ecm_12~ Fire.Interval +Fire.Severity, data=dat_ecm_12_site, distance='robust.aitchison', add=TRUE)
+anova(cap.all, by = "margin")
+plot(cap.all)
+
+# produce a nice plot
+# first extract scores from the resulting object and subset out different types of scores
+scrs.all <- scores(cap.all, tidy=TRUE)
+scrs_spp.all <- scrs.all %>% filter(score=='species')
+scrs_site.all <- scrs.all %>% filter(score=='sites')
+scrs_cent.all <- scrs.all %>% filter(score=='centroids')
+
+# first plot - site scores along with centroids for each group
+p<-cbind(dat_ecm_12_site, scrs_site.all) %>% 
+  ggplot(aes(x=CAP1, y=CAP2)) + 
+  geom_point(size=1, alpha=0.5) + 
+  geom_point(data=scrs_cent.all %>% 
+               rename(Regime=label) %>% 
+              mutate(Regime=gsub('Interval', '', Regime))
+             ,size=2) + 
+  #labs( x= 'CAP1 (1.86)', y= 'CAP2 (1.173)')+
+  theme_bw() + 
+  theme(legend.position='top') #
+p
+# second plot - species scores for those loaded heavily along at least one axis
+# this one still needs some work
+ggplot(scrs_spp %>% 
+         filter(abs(CAP1) > 0.5 | abs(CAP2) > 0.5)%>%
+         left_join(tax, by = c("label" = "SH_ID"))
+       , aes(x=CAP1, y=CAP2, label=Genus)) + 
+  geom_text() + 
+  xlim(c(min(scrs_site[, 'CAP1']), max(scrs_site[, 'CAP1']))) + 
+  ylim(c(min(scrs_site[, 'CAP2']), max(scrs_site[, 'CAP2']))) + 
+  theme_bw() -> p2
+
+p2
+
+
+
+
+
+
+
+dat_ecm_12_site$Severity
+
 
 # try a different distance index - result is quite good
-cap1 <- capscale(mat_ecm ~ Interval+Severity , data=dat_ecm, distance='robust.aitchison', add=TRUE)
+cap1 <- capscale(mat_ecm ~ Interval + Severity + # fire characteristics
+                   Live.Tree.Canopy.Cover_perc +Shrub.Cover_50.200cm_perc + # veg characteristic
+                   NH4 + NO3 + Total.P +# nutrient characteristics 
+                   Condition(Site)
+                   , data=dat_ecm_12_site, distance='robust.aitchison', add=TRUE)
 anova(cap1, by = "margin")
 plot(cap1)
 cap1 # summary of inertia
@@ -243,53 +242,58 @@ scrs_site <- scrs %>% filter(score=='sites')
 scrs_cent <- scrs %>% filter(score=='centroids')
 
 # first plot - site scores along with centroids for each group
-cbind(dat_ecm, scrs_site) %>% 
-  ggplot(aes(x=CAP1, y=CAP2, colour=Regime)) + 
+p<-cbind(dat_ecm_12_site, scrs_site) %>% 
+  ggplot(aes(x=CAP1, y=CAP2)) + 
   geom_point(size=1, alpha=0.5) + 
   geom_point(data=scrs_cent %>% 
-               rename(Regime=label) #%>% 
-              # mutate(Regime=gsub('dat_ecm$Interval', '', Interval))
+               rename(Regime=label) %>% 
+              mutate(Regime=gsub('Interval', '', Regime))
              ,size=2) + 
-  labs( x= 'CAP1 (1.86)', y= 'CAP2 (1.173)')+
+  #labs( x= 'CAP1 (1.86)', y= 'CAP2 (1.173)')+
   theme_bw() + 
   theme(legend.position='top') #
+p
 # second plot - species scores for those loaded heavily along at least one axis
 # this one still needs some work
 ggplot(scrs_spp %>% 
-         filter(abs(CAP1) > 0.5 | abs(CAP2) > 0.5), aes(x=CAP1, y=CAP2, label=label)) + 
+         filter(abs(CAP1) > 0.5 | abs(CAP2) > 0.5)%>%
+         left_join(tax, by = c("label" = "SH_ID"))
+       , aes(x=CAP1, y=CAP2, label=Genus)) + 
   geom_text() + 
   xlim(c(min(scrs_site[, 'CAP1']), max(scrs_site[, 'CAP1']))) + 
   ylim(c(min(scrs_site[, 'CAP2']), max(scrs_site[, 'CAP2']))) + 
   theme_bw() -> p2
+
+p2
 # plot side-by-side using the patchwork package
 library(patchwork)
 p1 + p2
 
 
-# top ten otus associated with the top of the ordination, presumably '???' samples
+# top ten otus associated with the top of the ordination, presumablymost sensative samples
 scrs_spp %>% 
   arrange(desc(CAP2)) %>% 
-  head(10) -> inv_otus
+  head(10) -> ind_otus
 # taxonomic information for those otus
 tax %>% 
-  filter(SH_ID %in% inv_otus$label)
+  filter(SH_ID %in% ind_otus$label)
 
 
 # still tidying - plotting turnover in space
-pco1 <- capscale(mat_ecm ~ 1, data=dat_ecm, distance='bray', add=TRUE)
+pco1 <- capscale(mat_ecm ~ 1, data=dat_ecm_12_site, distance='robust.aitchison', add=TRUE)
 scrs_site <- scores(pco1, display='sites') # TIDY
-cbind(dat_ecm, scrs_site) %>% 
-  ggplot(aes(x=Longitude, y=Latitude, colour=MDS1)) + 
+cbind(dat_ecm_12_site, scrs_site) %>% 
+  ggplot(aes(x=Longitude, y=Latitude)) + 
   geom_point()
 
 
 # including spatial patterns in analyses of community composition
 # one way to do this is using principle coordinates of neighbour matrices
-xy <- dist(dat_ecm[, c('Longitude', 'Latitude')]) # create distance matrix of longs and lats
+xy <- dist(dat_ecm_12_site[, c('Longitude', 'Latitude')]) # create distance matrix of longs and lats
 xy.pcnm <- pcnm(xy)$vectors %>% as.data.frame() # export the result into a dataframe
 
 # combine the PCNM results with the rest of the data  
-temp <- cbind(dat_ecm, xy.pcnm)
+temp <- cbind(dat_ecm_12_site, xy.pcnm)
 
 # what do the PCNMs represent? A plotting example
 ggplot(temp, aes(x=Longitude, y=Latitude, colour=PCNM1)) + 
@@ -307,18 +311,19 @@ anova(cap.sp)
 # which individual spatial variables to include?
 cap.0 <- capscale(mat_ecm ~ 1, data=temp) # intercept-only, starting analysis
 # uncomment this next line to run - takes a long time
- #ordistep(cap.0, formula(cap.sp), direction='forward')
+ ordistep(cap.0, formula(cap.sp), direction='forward')
 
 
 # should we include all climate variables in our analysis
 # check for variance inflation - values higher than ~ 10 are unlikely to explain unique variation
-cap.cl <- capscale(mat_ecm ~ Annual_Temp + elev, data=dat_ecm)
+cap.cl <- capscale(mat_ecm ~ Nute_Veg, data=dat_ecm_12_site)
+
 vif.cca(cap.cl)
 
 # variation partitioning - here to three groups of variables
 vp <- varpart(vegdist(mat_ecm, distance='robust.aitchison'), 
               ~Interval, # type of environment sample was collected from = X1
-              ~ elev , # climate = X2
+              ~Annual_Temp + elev , # climate = X2
               ~ PCNM2 + PCNM9  # spatial = X3
             , data=temp)
 vp
@@ -327,18 +332,19 @@ plot(vp, Xnames=c('Interval', 'Climate', 'Space'))
 # test unique variation explained by partitions using partial CAPs
 # 1 - associated with site_code
 anova(capscale(mat_ecm ~ Interval +
-                 Condition(elev +
+                 Condition(Annual_Temp + elev +
                               PCNM2 + PCNM9 ), data=temp, 
                distance='robust.aitchison'))
 # 2 - associated with climate
-anova(capscale(mat_ecm ~ elev +
+anova(capscale(mat_ecm ~ Annual_Temp + elev +
                  Condition(Interval + 
                              PCNM2 + PCNM9), data=temp, 
                distance='robust.aitchison'))
 # 3 - associated with space
 anova(capscale(mat_ecm ~ PCNM2 + PCNM9 +
-                 Condition( elev + Interval), data=temp, 
+                 Condition(Annual_Temp + elev + Interval), data=temp, 
                distance='robust.aitchison'))
+
 
 
 

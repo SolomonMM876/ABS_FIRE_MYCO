@@ -18,7 +18,7 @@ sites <- Site.info[,c('Site', 'Long', 'Lat')] %>%
 
 #extract monthly precipitation averages for all locations
 #not sure why I cant change file path here, but this is all that works
-precip.files <- list.files("Raw_data/world clim/precip", ".tif", full.names=TRUE)
+precip.files <- list.files("C:/Users/90957135/OneDrive - Western Sydney University/ABS_FIRE/world clim/precip", ".tif", full.names=TRUE)
 precip <- stack(precip.files)
 
 month <- c("precip_Jan", "precip_Feb", "precip_Mar", "precip_Apr", "precip_May", "precip_Jun", "precip_Jul", "precip_Aug",
@@ -28,7 +28,7 @@ names(precip) <- month
 precip.data<-raster::extract(precip,sites)
 
 ###################bioclimatic var###
-bio.files <- list.files("Raw_data/world clim/bio", ".tif", full.names=TRUE)
+bio.files <- list.files("C:/Users/90957135/OneDrive - Western Sydney University/ABS_FIRE/world clim/bio", ".tif", full.names=TRUE)
 bio.var <- stack(bio.files)
 #Bio 1 and Bio12 are mean anual temperature and anual precipitation
 Temp__Precip_Annual_ <- bio.var[[c(1,12)]]
@@ -38,7 +38,7 @@ Temp__Precip_Annual_data<-raster::extract(Temp__Precip_Annual_,sites)
 
 
 ########Tavg######
-Tavg.files <- list.files("Raw_data/world clim/tavg", ".tif", full.names=TRUE)
+Tavg.files <- list.files("C:/Users/90957135/OneDrive - Western Sydney University/ABS_FIRE/world clim/tavg", ".tif", full.names=TRUE)
 Tavg.var <- stack(Tavg.files)
 
 month <- c("Tavg_Jan", "Tavg_Feb", "Tavg_Mar", "Tavg_Apr", "Tavg_May", "Tavg_Jun", "Tavg_Jul", "Tavg_Aug",
@@ -48,7 +48,7 @@ names(Tavg.var) <- month
 Tavg_data<-raster::extract(Tavg.var,sites)
 
 ###elevation####
-elev.files <- list.files("Raw_data/world clim/elevation", ".tif", full.names=TRUE)
+elev.files <- list.files("C:/Users/90957135/OneDrive - Western Sydney University/ABS_FIRE/world clim/elevation", ".tif", full.names=TRUE)
 elev.var <- stack(elev.files)
 
 elev_data<-raster::extract(elev.var,sites)
@@ -58,6 +58,9 @@ elev_data<-raster::extract(elev.var,sites)
 
 Site_Env_data<-cbind(sites,precip.data,Temp__Precip_Annual_data, Tavg_data,elev_data)
 Site_Env_data<-rownames_to_column(Site_Env_data, var='site')
+
+library(writexl)
+write_xlsx(Site_Env_data,'Processed_data/Site_Precip_Temp_Elv.xlsx')
 
 #remove extra df's
 rm(sites,Tavg_data,precip.data,Temp__Precip_Annual_data,elev_data, elav.var,bio.var,Tavg.var, Temp__Precip_Annual_)

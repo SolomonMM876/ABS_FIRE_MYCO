@@ -115,17 +115,21 @@ Site.variation<-bag_avg%>%
 
 
 
-PROC_VEG_Transect <- read_excel("Raw_data/ABS.MER.fielddata.Feb.2023_R.PROCESSED.VEG.COVER_ALL.xlsx", 
+PROC_VEG_Transect <- read_excel("Raw_data/Site_Data/ABS.MER.fielddata.Feb.2023_R.PROCESSED.VEG.COVER_ALL.xlsx", 
                                 sheet = "Transect.Level_Data")
 PROC_VEG_Transect<-PROC_VEG_Transect%>%
   mutate(Site=gsub('ABS00|ABS0', "", Site),
          Transect=gsub('T',"",Transect))
 
  
-Site_Info <- read_excel("Raw_data/Site.Info.xlsx")%>%
+Site_Info <- read_excel("Raw_data/Site_Data/Site.Info.xlsx")%>%
   select('1st_Soil_Sample',Bag_Install,Site,Pair)%>%
   mutate(Site=gsub('ABS00|ABS0', "", Site))%>%
-           unique()
+           unique()%>%
+   group_by(Pair) %>%
+  mutate(Site_Pair = paste(sort(unique(Site)), collapse = "-")) %>%
+  ungroup()
+  
 
 site_data<-list(bag_avg, Nutrients.Sites.All,PROC_VEG_Transect,Site_Info)
 #calculate variation within sites in terms of biomass 

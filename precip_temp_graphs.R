@@ -70,8 +70,9 @@ for (i in unique(Sites_Precip$Site)) {
   ggsave(plots_list[[i]], file=paste0("plot_month_avg_", i,".png"),path='precip_graph/', width = 14, height = 10, units = "cm")
 }
 
+library(writexl)
 
-
+write_xlsx(Sites_Precip,'Processed_data/Site_Precip.xlsx')
 
 
 #daily temp max
