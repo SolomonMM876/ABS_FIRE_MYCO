@@ -1,0 +1,91 @@
+Sample ID,Sample Details,Test Name,Result,Units,Absorbance,Time,Manual Dil,Auto Dil
+STANDARD 1,,Ammonia 2.0, 0.0873,mg N/L,0.087289,Fri Jun 16 11:52:34 2023,1,1
+STANDARD 1,,Nitrate 2, 0.0161,mg N/L,0.016120,Fri Jun 16 13:32:08 2023,1,1
+STANDARD 90,,Ammonia 2.0, 0.1111,mg N/L,0.111100,Fri Jun 16 11:54:34 2023,1,1
+STANDARD 90,,Nitrate 2, 0.0283,mg N/L,0.028294,Fri Jun 16 13:34:11 2023,1,1
+STANDARD 91,,Ammonia 2.0, 0.1423,mg N/L,0.142292,Fri Jun 16 11:56:34 2023,1,1
+STANDARD 91,,Nitrate 2, 0.0458,mg N/L,0.045833,Fri Jun 16 13:36:13 2023,1,1
+STANDARD 92,,Ammonia 2.0, 0.1973,mg N/L,0.197305,Fri Jun 16 11:58:32 2023,1,1
+STANDARD 92,,Nitrate 2, 0.0761,mg N/L,0.076054,Fri Jun 16 13:38:15 2023,1,1
+STANDARD 93,,Ammonia 2.0, 0.3634,mg N/L,0.363431,Fri Jun 16 12:00:30 2023,1,1
+STANDARD 93,,Nitrate 2, 0.1597,mg N/L,0.159721,Fri Jun 16 13:40:17 2023,1,1
+STANDARD 94,,Ammonia 2.0, 0.6421,mg N/L,0.642117,Fri Jun 16 12:02:28 2023,1,1
+STANDARD 94,,Nitrate 2, 0.2972,mg N/L,0.297202,Fri Jun 16 13:42:19 2023,1,1
+STANDARD 95,,Ammonia 2.0, 1.1102,mg N/L,1.110162,Fri Jun 16 12:04:26 2023,1,1
+STANDARD 95,,Nitrate 2, 0.5343,mg N/L,0.534287,Fri Jun 16 13:44:21 2023,1,1
+STANDARD 0,,Ammonia 2.0, 0.0806,mg N/L,0.080573,Fri Jun 16 12:06:24 2023,1,1
+STANDARD 0,,Nitrate 2, 0.0177,mg N/L,0.017716,Fri Jun 16 13:46:23 2023,1,1
+C C V,,Ammonia 2.0, 0.9417,mg N/L,0.581734,Fri Jun 16 12:08:22 2023,1,1
+C C V,,Nitrate 2, 1.0058,mg N/L,0.284374,Fri Jun 16 13:48:25 2023,1,1
+C C B ,,Ammonia 2.0,-0.0242,mg N/L,0.084066,Fri Jun 16 12:10:20 2023,1,1
+C C B ,,Nitrate 2,-0.0205,mg N/L,0.017235,Fri Jun 16 13:50:26 2023,1,1
+29 1b,,Ammonia 2.0, 0.3977,mg N/L,0.301454,Fri Jun 16 12:12:19 2023,1,1
+29 1b,,Nitrate 2, 0.0266,mg N/L,0.029511,Fri Jun 16 13:52:28 2023,1,1
+56 1b,,Ammonia 2.0, 0.8475,mg N/L,0.533189,Fri Jun 16 12:14:17 2023,1,1
+56 1b,,Nitrate 2, 0.0197,mg N/L,0.027713,Fri Jun 16 13:54:32 2023,1,1
+27 1a,,Ammonia 2.0, 0.5114,mg N/L,0.360016,Fri Jun 16 12:16:15 2023,1,1
+27 1a,,Nitrate 2, 0.0175,mg N/L,0.027133,Fri Jun 16 13:56:36 2023,1,1
+31 1a,,Ammonia 2.0, 0.2112,mg N/L,0.205334,Fri Jun 16 12:18:16 2023,1,1
+31 1a,,Nitrate 2, 0.0316,mg N/L,0.030802,Fri Jun 16 13:58:38 2023,1,1
+12 1b,,Ammonia 2.0, 0.2890,mg N/L,0.245429,Fri Jun 16 12:20:15 2023,1,1
+12 1b,,Nitrate 2, 0.0222,mg N/L,0.028364,Fri Jun 16 14:00:39 2023,1,1
+40 1b,,Ammonia 2.0, 0.7097,mg N/L,0.462188,Fri Jun 16 12:22:14 2023,1,1
+40 1b,,Nitrate 2, 0.0174,mg N/L,0.027116,Fri Jun 16 14:02:41 2023,1,1
+1 2a,,Ammonia 2.0, 0.4181,mg N/L,0.311976,Fri Jun 16 12:24:12 2023,1,1
+1 2a,,Nitrate 2, 0.0180,mg N/L,0.027274,Fri Jun 16 14:04:42 2023,1,1
+8 2b,,Ammonia 2.0, 0.8018,mg N/L,0.509667,Fri Jun 16 12:26:11 2023,1,1
+8 2b,,Nitrate 2, 0.0108,mg N/L,0.025380,Fri Jun 16 14:06:44 2023,1,1
+59 1a,,Ammonia 2.0, 0.3976,mg N/L,0.301374,Fri Jun 16 12:28:10 2023,1,1
+59 1a,,Nitrate 2, 0.0242,mg N/L,0.028893,Fri Jun 16 14:08:46 2023,1,1
+4 2a,,Ammonia 2.0, 0.1703,mg N/L,0.184295,Fri Jun 16 12:30:08 2023,1,1
+4 2a,,Nitrate 2, 0.0374,mg N/L,0.032328,Fri Jun 16 14:10:47 2023,1,1
+C C V,,Ammonia 2.0, 0.9675,mg N/L,0.595046,Fri Jun 16 12:32:07 2023,1,1
+C C V,,Nitrate 2, 0.9243,mg N/L,0.263145,Fri Jun 16 14:12:49 2023,1,1
+C C B ,,Ammonia 2.0,-0.0255,mg N/L,0.083380,Fri Jun 16 12:34:06 2023,1,1
+C C B ,,Nitrate 2,-0.0200,mg N/L,0.017372,Fri Jun 16 14:14:51 2023,1,1
+10 1b,,Ammonia 2.0, 0.5139,mg N/L,0.361314,Fri Jun 16 12:36:06 2023,1,1
+10 1b,,Nitrate 2, 0.0178,mg N/L,0.027203,Fri Jun 16 14:16:53 2023,1,1
+59 1b,,Ammonia 2.0, 0.3340,mg N/L,0.268612,Fri Jun 16 12:38:04 2023,1,1
+59 1b,,Nitrate 2, 0.0316,mg N/L,0.030802,Fri Jun 16 14:18:57 2023,1,1
+38 2b,,Ammonia 2.0, 0.4800,mg N/L,0.343866,Fri Jun 16 12:40:03 2023,1,1
+38 2b,,Nitrate 2, 0.0147,mg N/L,0.026414,Fri Jun 16 14:21:01 2023,1,1
+60 1a,,Ammonia 2.0, 0.6501,mg N/L,0.431499,Fri Jun 16 12:42:03 2023,1,1
+60 1a,,Nitrate 2, 0.0162,mg N/L,0.026799,Fri Jun 16 14:23:03 2023,1,1
+25 2b,,Ammonia 2.0, 0.3298,mg N/L,0.266442,Fri Jun 16 12:44:03 2023,1,1
+25 2b,,Nitrate 2, 0.0288,mg N/L,0.030076,Fri Jun 16 14:25:05 2023,1,1
+26 1b,,Ammonia 2.0, 0.6295,mg N/L,0.420880,Fri Jun 16 12:46:02 2023,1,1
+26 1b,,Nitrate 2, 0.0194,mg N/L,0.027643,Fri Jun 16 14:27:07 2023,1,1
+6 2b,,Ammonia 2.0, 0.3983,mg N/L,0.301778,Fri Jun 16 12:48:00 2023,1,1
+6 2b,,Nitrate 2, 0.0140,mg N/L,0.026221,Fri Jun 16 14:29:09 2023,1,1
+60 1a,,Ammonia 2.0, 0.4608,mg N/L,0.333968,Fri Jun 16 12:49:59 2023,1,1
+60 1a,,Nitrate 2, 0.0191,mg N/L,0.027555,Fri Jun 16 14:31:11 2023,1,1
+11 2a,,Ammonia 2.0, 0.2335,mg N/L,0.216830,Fri Jun 16 12:51:57 2023,1,1
+11 2a,,Nitrate 2, 0.0214,mg N/L,0.028153,Fri Jun 16 14:33:14 2023,1,1
+34 2a,,Ammonia 2.0, 0.9206,mg N/L,0.570843,Fri Jun 16 12:53:55 2023,1,1
+34 2a,,Nitrate 2, 0.0193,mg N/L,0.027608,Fri Jun 16 14:35:16 2023,1,1
+C C V,,Ammonia 2.0, 0.9742,mg N/L,0.598479,Fri Jun 16 12:55:53 2023,1,1
+C C V,,Nitrate 2, 0.8995,mg N/L,0.256691,Fri Jun 16 14:37:18 2023,1,1
+C C B ,,Ammonia 2.0,-0.0298,mg N/L,0.081170,Fri Jun 16 12:57:51 2023,1,1
+C C B ,,Nitrate 2,-0.0207,mg N/L,0.017183,Fri Jun 16 14:39:21 2023,1,1
+37 2a,,Ammonia 2.0, 0.4558,mg N/L,0.331403,Fri Jun 16 12:59:49 2023,1,1
+37 2a,,Nitrate 2, 0.0270,mg N/L,0.029599,Fri Jun 16 14:41:26 2023,1,1
+8 1b,,Ammonia 2.0, 0.5626,mg N/L,0.386397,Fri Jun 16 13:01:47 2023,1,1
+8 1b,,Nitrate 2, 0.0157,mg N/L,0.026677,Fri Jun 16 14:43:29 2023,1,1
+4 2b,,Ammonia 2.0, 0.2285,mg N/L,0.214258,Fri Jun 16 13:03:47 2023,1,1
+4 2b,,Nitrate 2, 0.0205,mg N/L,0.027924,Fri Jun 16 14:44:24 2023,1,1
+40 1a,,Ammonia 2.0, 0.7438,mg N/L,0.479786,Fri Jun 16 13:05:47 2023,1,1
+40 1a,,Nitrate 2, 0.0006,mg N/L,0.022746,Fri Jun 16 14:45:18 2023,1,1
+40 2a,,Ammonia 2.0, 0.9534,mg N/L,0.587752,Fri Jun 16 13:07:26 2023,1,1
+40 2a,,Nitrate 2, 0.0130,mg N/L,0.025975,Fri Jun 16 14:46:13 2023,1,1
+60 2b,,Ammonia 2.0, 0.5416,mg N/L,0.375613,Fri Jun 16 13:09:04 2023,1,1
+60 2b,,Nitrate 2, 0.0355,mg N/L,0.031813,Fri Jun 16 14:47:08 2023,1,1
+56 1a,,Ammonia 2.0, 1.0785,mg N/L,0.652204,Fri Jun 16 13:11:45 2023,1,1
+56 1a,,Nitrate 2, 0.0200,mg N/L,0.027783,Fri Jun 16 14:48:02 2023,1,1
+6 1a,,Ammonia 2.0, 0.3572,mg N/L,0.280588,Fri Jun 16 13:15:35 2023,1,1
+6 1a,,Nitrate 2, 0.0218,mg N/L,0.028259,Fri Jun 16 14:48:57 2023,1,1
+3 2b,,Ammonia 2.0, 0.4546,mg N/L,0.330754,Fri Jun 16 13:19:27 2023,1,1
+3 2b,,Nitrate 2, 0.0314,mg N/L,0.030767,Fri Jun 16 14:49:51 2023,1,1
+C C V,,Ammonia 2.0, 0.9513,mg N/L,0.586697,Fri Jun 16 13:23:19 2023,1,1
+C C V,,Nitrate 2, 0.9059,mg N/L,0.258363,Fri Jun 16 14:50:46 2023,1,1
+C C B ,,Ammonia 2.0,-0.0123,mg N/L,0.090189,Fri Jun 16 13:27:08 2023,1,1
+C C B ,,Nitrate 2,-0.0271,mg N/L,0.015521,Fri Jun 16 14:51:41 2023,1,1

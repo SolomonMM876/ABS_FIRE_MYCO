@@ -1,0 +1,6 @@
+  	       	         	                    	   	P       	    	S      	    	
+Nr	Ident  	Seq      	Time                	Pos	C       	Unit	C      	Unit	
+1 	502-397	Ave of 3 	07-Jul-2023 15:24:53	2  	582.113 	ppm 	170.562	ppm 	
+2 	502-309	Ave of 3 	07-Jul-2023 15:28:49	1  	1014.349	ppm 	777.518	ppm 	
+3 	502-3??	Ave of 2 	07-Jul-2023 15:28:49	   	798.231 	ppm 	474.040	ppm 	
+4 	502-3??	SDev of 2	07-Jul-2023 15:28:49	   	305.637 	ppm 	429.183	ppm 	

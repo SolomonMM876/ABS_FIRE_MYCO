@@ -1,0 +1,32 @@
+Sample ID,Sample Details,Test Name,Result,Units,Absorbance,Time,Manual Dil,Auto Dil
+STANDARD 1,,bray-p 1, 0.0073,mgP/L,0.007293,Fri Jun 09 11:53:08 2023,1,1
+STANDARD 90,,bray-p 1, 0.0131,mgP/L,0.013080,Fri Jun 09 11:54:25 2023,1,1
+STANDARD 91,,bray-p 1, 0.0213,mgP/L,0.021318,Fri Jun 09 11:55:41 2023,1,1
+STANDARD 92,,bray-p 1, 0.0362,mgP/L,0.036199,Fri Jun 09 11:56:58 2023,1,1
+STANDARD 93,,bray-p 1, 0.0815,mgP/L,0.081537,Fri Jun 09 11:58:15 2023,1,1
+STANDARD 94,,bray-p 1, 0.1535,mgP/L,0.153511,Fri Jun 09 11:59:33 2023,1,1
+STANDARD 95,,bray-p 1, 0.2290,mgP/L,0.229004,Fri Jun 09 12:00:50 2023,1,1
+STANDARD 96,,bray-p 1, 0.2954,mgP/L,0.295391,Fri Jun 09 12:02:07 2023,1,1
+STANDARD 0,,bray-p 1, 0.0071,mgP/L,0.007121,Fri Jun 09 12:03:24 2023,1,1
+C C V,,bray-p 1, 0.5408,mgP/L,0.164856,Fri Jun 09 12:04:42 2023,1,1
+C C B ,,bray-p 1,-0.0011,mgP/L,0.007332,Fri Jun 09 12:06:02 2023,1,1
+25 2b,,bray-p 1, 0.0801,mgP/L,0.030929,Fri Jun 09 12:07:21 2023,1,1
+9 2a,,bray-p 1, 0.1174,mgP/L,0.041777,Fri Jun 09 12:08:39 2023,1,1
+59 2a,,bray-p 1, 0.0862,mgP/L,0.032710,Fri Jun 09 12:09:57 2023,1,1
+1 2a,,bray-p 1, 0.0986,mgP/L,0.036310,Fri Jun 09 12:11:14 2023,1,1
+28 1a,,bray-p 1, 0.0821,mgP/L,0.031518,Fri Jun 09 12:12:32 2023,1,1
+4 1b,,bray-p 1, 0.1064,mgP/L,0.038587,Fri Jun 09 12:13:49 2023,1,1
+12 1b,,bray-p 1, 0.1477,mgP/L,0.050586,Fri Jun 09 12:15:07 2023,1,1
+12 1a,,bray-p 1, 0.1248,mgP/L,0.043924,Fri Jun 09 12:16:27 2023,1,1
+57 2a,,bray-p 1, 0.1859,mgP/L,0.061673,Fri Jun 09 12:17:46 2023,1,1
+25 1a,,bray-p 1, 0.1660,mgP/L,0.055905,Fri Jun 09 12:18:43 2023,1,1
+C C V,,bray-p 1, 0.5510,mgP/L,0.167825,Fri Jun 09 12:19:45 2023,1,1
+C C B ,,bray-p 1,-0.0003,mgP/L,0.007553,Fri Jun 09 12:20:38 2023,1,1
+12 2b,,bray-p 1, 0.0960,mgP/L,0.035564,Fri Jun 09 12:21:32 2023,1,1
+4 1a,,bray-p 1, 0.1000,mgP/L,0.036729,Fri Jun 09 12:22:25 2023,1,1
+9 1b,,bray-p 1, 0.1010,mgP/L,0.037000,Fri Jun 09 12:23:18 2023,1,1
+11 1a,,bray-p 1, 0.1056,mgP/L,0.038337,Fri Jun 09 12:24:11 2023,1,1
+60 1a,,bray-p 1, 0.1971,mgP/L,0.064938,Fri Jun 09 12:25:05 2023,1,1
+49 1b,,bray-p 1, 0.1373,mgP/L,0.047567,Fri Jun 09 12:25:58 2023,1,1
+C C V,,bray-p 1, 0.5356,mgP/L,0.163352,Fri Jun 09 12:26:51 2023,1,1
+C C B ,,bray-p 1,-0.0001,mgP/L,0.007629,Fri Jun 09 12:27:44 2023,1,1
