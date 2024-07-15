@@ -185,7 +185,7 @@ Interval_Indicator<-out_Interval %>%
 
 Interval_Indicator
 
-Interval_Severity<-out_Severity %>% 
+Indicator_Severity<-out_Severity %>% 
   ggplot(aes(x=Severity, y=count, fill=Genus,color=Species, text=SH_ID)) + # text aesthetic is for the ggplotly visualisation below
   geom_bar(stat='identity', position=position_fill()) + 
   scale_x_discrete(drop=FALSE) + 
@@ -194,7 +194,7 @@ Interval_Severity<-out_Severity %>%
   labs(y='Percentage') + 
   theme_bw() 
 
-Interval_Severity
+Indicator_Severity
 
 
 # use this next lines to interactively get OTU IDs
