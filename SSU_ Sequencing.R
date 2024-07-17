@@ -17,14 +17,11 @@ Bag_Site<-read_excel('Processed_data/All_Bag_Site_Info.xlsx')
 Hyphal_CNHP <- read_excel("Raw_data/Stoich/Stoich_Totals_Round_1.xlsx")
 
 
-Bag_Site_Short<-Bag_Site%>%
-  mutate(Regime = paste(Fire.Interval, Fire.Severity, sep = "_"))%>%
-  dplyr::select(Site,Transect,Bray.P:Dead.Tree.Canopy.Cover_perc,Pair,log10_Second_Weight_bag_yield_est:Regime)%>%
-  group_by(Site,Transect)%>%
-  mutate(Biomass= mean(.085+10^log10_Second_Weight_bag_yield_est, na.rm = TRUE))%>%
-  select(-log10_Second_Weight_bag_yield_est)%>%distinct()%>%
-  left_join(Hyphal_CNHP%>%rename(Carb_Hyph = Carbon, Nitrog_Hyph =Nitrogen, Phos_Hyph= Percent_Phos)%>%
-              select(-Fire.Interval,-Fire.Severity))
+Site_Nutrients<-Bag_Site%>%
+  dplyr::select(Site,Bray.P:Fire.Interval,Tree.Basal.Area_m2:Dead.Tree.Canopy.Cover_perc,Pair)%>%
+  dplyr::distinct()%>%
+  group_by(Site) %>%
+  summarise(across(c(Bray.P: Nitrogen), mean, na.rm = TRUE))
 
 
 
@@ -32,11 +29,12 @@ Bag_Site_Short<-Bag_Site%>%
 
 Site_Info<-read_excel("Raw_data/Site_Info_12_Short.xlsx")[,-1]%>%
   select(-Transect,-Sample)%>%distinct()%>% select(-`Fire 3`,- `FESM severity category`,
-                                                   - `Interval (yrs)...13`, -`Interval (yrs)...14`)
+                                                   - `Interval (yrs)...13`, -`Interval (yrs)...14`)%>%
+  left_join(Site_Nutrients)
   
 
 #ID of OTU's
-parsed_otus <- read_csv("Raw_data/Sequence/parsed_otus.csv")
+tax <- read_csv("Raw_data/Sequence/parsed_otus.csv")
   
 
 
@@ -53,7 +51,21 @@ dat_ssu<-left_join(Site_Info,mat%>%rownames_to_column('Site'))%>%
   filter(!Site==56)
   
 
-# check variation in sample effort, looking for break points
+
+data_long <- pivot_longer(dat_ssu, cols = starts_with("OTU_"), names_to = "OTU_ID", values_to = "Count")%>%
+  left_join(tax)
+
+
+ggplot(data_long, aes(x = Site, y = Count, fill = genus)) +
+  geom_bar(stat = 'identity', position = 'stack') +
+  facet_wrap(~ Interval,scales = 'free_x') +
+  theme_classic() +
+  labs(title = "Species Counts at Each Site by Fire Interval",
+       x = "Site",
+       y = "Species Count")
+
+
+# theme_classic()# check variation in sample effort, looking for break points
 hist(log10(rowSums(mat)))
 sort(rowSums(mat))[1:25]
 
@@ -62,7 +74,7 @@ sort(rowSums(mat))[1:25]
 # identify OTUs that are overrepresented in samples coming from one or more groups of site_code
 library(indicspecies)
 multipatt(dat_ssu %>% select(starts_with('OTU_')), # first argument is the community table, select only those columns
-          dat_ssu$Site) -> res
+          dat_ssu$Interval) -> res
 summary(res)
 
 # to visualise differences in taxonomic composition, using output from multipatt()
@@ -79,12 +91,56 @@ out <- res[['sign']] %>%
 # extract the community table, save as a new object
 mat_ssu <- dat_ssu %>% select(starts_with('OTU_'))
 
-adonis2(mat_ssu ~ Site, data=dat_ssu, distance='robust.aitchison', add=TRUE)
+adonis2(mat_ssu ~ 1, data=dat_ssu, distance='robust.aitchison', add=TRUE)
 
 # try a different distance index - result is quite good
-cap1 <- capscale(mat_ssu ~ Site, data=dat_ssu, distance='robust.aitchison', add=TRUE)
+cap1 <- capscale(mat_ssu ~ Interval + Total.P, data=dat_ssu, distance='robust.aitchison', add=TRUE)
 plot(cap1)
 cap1 # summary of inertia
-cap1$CCA$eig/cap1$tot.chi # proportion of variation associated with each axis
+proportions_CAP<-round(cap1$CCA$eig/cap1$tot.chi *100, 1) # proportion of variation associated with each axis
+proportions_MDS<-round(cap1$CA$eig/cap1$tot.chi *100, 1) # proportion of variation associated with each axis
 anova(cap1)
 
+cap1$tot.chi
+
+scrs <- scores(cap1, tidy=TRUE)
+scrs_spp <- scrs %>% filter(score=='species')
+scrs_site <- scrs %>% filter(score=='sites')
+scrs_cent <- scrs %>% filter(score=='centroids')
+scrs_biplot <- scrs %>% filter(score=='biplot')
+
+interval_colors <- c("Long" = "darkred", "Short" = "orange")
+
+
+# first plot - site scores along with centroids for each group
+p2<-cbind(dat_ssu, scrs_site) %>% 
+  ggplot(aes(x=CAP1, y=CAP2)) + 
+  geom_vline(xintercept = c(0), color = "grey70", linetype = 2) +
+  geom_hline(yintercept = c(0), color = "grey70", linetype = 2) +  
+  geom_text(aes( label = label), color= 'black', size=3)+
+  geom_point(aes( colour= Interval ), size=8)+ 
+  scale_colour_manual(values = interval_colors) +     # Custom colors for Interval
+  #geom_text(data = scrs_cent, aes(label = label), size = 2) + 
+ labs( x=  paste0("CAP1 (", proportions_CAP[1], "%)"), y=  paste0("CAP2 (", proportions_CAP[2], "%)"))+
+  geom_segment(data=scrs_spp%>%
+               filter(abs(CAP1) > 0.5 | abs(CAP2) > 0.5),
+               inherit.aes = FALSE,
+               aes(x=0,y=0, xend=CAP1, yend=CAP2, group=label),
+               arrow = arrow(type = "closed",length=unit(3,'mm')),
+               color= 'black') +
+  geom_text_repel(data=scrs_spp%>%
+                    filter(abs(CAP1) > 0.5 | abs(CAP2) > 0.5)%>%
+                    rename(OTU_ID=label)%>%
+                    left_join(tax),
+                  inherit.aes = FALSE,
+                  aes(x=CAP1, y=CAP2, label=genus),
+                  colour='black',size=7)+
+
+  theme_classic()+
+  theme(axis.text.x = element_text(angle = -45, hjust = 0.5,size=20),
+        axis.text.y = element_text(size=20),
+        axis.title.x = element_text(size=25),
+        axis.title.y = element_text(size=25) )+
+  theme(legend.position='top')
+
+p2

@@ -5,7 +5,7 @@ library(dplyr)
 library(ggplot2)
 
 
-Fresh_Bag_weights <- read_excel("~/Bag_data/Fresh_Bag_weights.xlsx")
+Fresh_Bag_weights <- read_excel("C:/Users/90957135/OneDrive - Western Sydney University/Bag_data/Fresh_Bag_weights.xlsx")
 
 
 

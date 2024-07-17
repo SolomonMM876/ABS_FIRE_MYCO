@@ -18,38 +18,39 @@ Manual_Calc_Total_P <- read_excel("Raw_data/Stoich/Manual Calc_Total P.xlsx",
 ###### Total_P ###
   
 Total_P<-Manual_Calc_Total_P%>%
-    rename(Phos= `This is what I think Numbers should be`,
-           Sample =`Sample ID`)%>%
+    rename( Sample =`Sample ID`,
+           Percent_Phos_= `% P_ Sols calc`,)%>%
     mutate( Sample = replace(Sample, row_number() %in% c(1, 5, 12), c(5.1, 10.2, 34.2)))%>%
-  # left_join(First_Run%>%select(Sample, P_mg_Kg_Sol)%>% rename(First_Phos= P_mg_Kg_Sol ))%>%
-   left_join(Bag_Site %>% select(Site,Transect,Fire.Interval,Fire.Severity)%>% unique()%>%
+   left_join(Bag_Site %>% dplyr::select(Site,Transect,Fire.Interval,Fire.Severity)%>% unique()%>%
                   mutate(Sample = paste(Site, Transect, sep = "."))
                , by = 'Sample')%>%
     filter(!str_detect(Sample, 'STAND|C C|MID|BLANK'))%>%
-  select(Site,Transect,Sample,Sample_mg, Fire.Interval, Fire.Severity,Percent_Phos)%>%
+  dplyr::select(Site,Transect,Sample,Sample_mg, Fire.Interval, Fire.Severity,Percent_Phos_)%>%
   mutate(Site= if_else(is.na(Site),Sample,Site),
   Fire.Interval= if_else(is.na(Fire.Interval),'Standards',Fire.Interval),
   Fire.Severity= if_else(is.na(Fire.Severity),'Standards',Fire.Severity),
   Stan_Group = ifelse(Fire.Interval == 'Standards', substr(Site, 1, 3), Fire.Interval))
   
   
-Total_P%>%
-  filter(Sample_mg>1)%>%
-  ggplot(aes(x=Site, y=Percent_Phos) )+ 
+p<-Total_P%>%
+  #filter(Sample_mg>1)%>%
+  ggplot(aes(x=Site, y=Percent_Phos_) )+ 
   geom_point(aes( color = Sample_mg < 1), size = 5,shape= 'square') +
   geom_boxplot(aes(x=Stan_Group))+
   scale_color_manual(values = c("TRUE" = "red", "FALSE" = "black")) +
   facet_grid(~Fire.Interval, scales = 'free_x')+
   ylab('Phosphorus %')+
-  scale_y_continuous(breaks=seq(-1.5,2,by=.5))+
+ # scale_y_continuous(breaks=seq(-1.5,2,by=.5))+
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
   theme_classic()+
   theme(axis.text.x = element_text(angle = -45, hjust = 0.5))
 
+plotly::ggplotly(p)
 #CN
 Hyphae_CN <- read_excel("Raw_data/Stoich/Solomon Hyphae CN calc_11.07.24.xlsx", skip = 44)[-4,]
 CN_Hyphae_ID <- read_excel("Raw_data/Stoich/CN_Hyphae.xlsx")
 Bag_Site<-read_excel('Processed_data/All_Bag_Site_Info.xlsx')
+
 
 
 CNH<-Hyphae_CN%>%
@@ -90,26 +91,30 @@ CNH%>%
   theme(axis.text.x = element_text(angle = -45, hjust = 0.5))
 
 CNH%>%
-  filter(Sample!='56.2'|is.na(Sample))%>%
+  filter(Sample_mg > .7)%>%
+  filter(Fire.Interval!='Standards')%>%
   ggplot(aes(x=Site) )+ 
-  geom_point(aes(y=C_N, color = Sample_mg < .7), size = 5, shape= 'triangle') +
+  geom_point(aes(y=C_N), size = 5, shape= 'triangle') +
   geom_boxplot(aes(x=Fire.Interval, y= C_N))+
-  scale_color_manual(values = c("TRUE" = "red", "FALSE" = "black")) +
+ # scale_color_manual(values = c("TRUE" = "red", "FALSE" = "black")) +
   facet_grid(~Fire.Interval, scales = 'free_x')+
   labs( y= ('C:N'))+
   geom_hline(yintercept = 16, linetype = "dashed", color = "grey") +
   theme_classic()+
-  theme(axis.text.x = element_text(angle = -45, hjust = 0.5))
-
+  theme(axis.text.x = element_text(angle = -45, hjust = 0.5,size=20),
+        axis.text.y = element_text(size=20),
+        axis.title.x = element_text(size=25),
+        axis.title.y = element_text(size=25))+
+  annotate("text", x = 6, y = Inf, label = "(F,P) =  (2.5317, 0.1461)", hjust = 1.1, vjust = 1.1, size = 5)
+  
 
 
 
 CNHP<-CNH%>%rename(Sample_mg_CN=Sample_mg)%>%
-  full_join(Total_P%>%rename(Sample_mg_P=Sample_mg)%>%
-             filter(Percent_Phos>.2),
+  full_join(Total_P%>%rename(Sample_mg_P=Sample_mg),
               by=c('Site','Transect','Fire.Interval','Fire.Severity','Sample'))%>%
-  mutate(  C_P = Carbon/Percent_Phos,
-           C_N_P= Carbon/Nitrogen/Percent_Phos)
+  mutate(  C_P = Carbon/Percent_Phos_,
+           C_N_P= Carbon/Nitrogen/Percent_Phos_)
 
 
 CNHP%>%

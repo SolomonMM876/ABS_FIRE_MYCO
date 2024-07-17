@@ -144,8 +144,29 @@ Bag_Site<-reduce(site_data,left_join)%>%
 
 rm(bag_data,myc_data,bag_myc,Site_Info,site_data,bag_avg)
 
+#add instillation date
+Bag_Site$harvest_date<-as_date(Bag_Site$harvest_date)
+Bag_Site$Bag_Install<-as_date(Bag_Site$Bag_Install)
+
+
+Bag_Site <- Bag_Site %>%
+  mutate(Days_Installed = as.integer(harvest_date - Bag_Install))%>%
+  arrange(Site,Days_Installed)
+
+
+mean(Bag_Site$Days_Installed)
+sd(Bag_Site$Days_Installed)
+
+
 Bag_Site$log10_myc_bag_yield_est <- log10(Bag_Site$myc_bag_yield_est + 0.18)
 Bag_Site$log10_Second_Weight_bag_yield_est <- log10(Bag_Site$Second_Weight_bag_yield_est + 0.095)
+Bag_Site<-Bag_Site%>%
+  mutate(Biomass_day=as.numeric(Second_Weight_bag_yield_est/Days_Installed),
+         log10_biomass_day= log10(Biomass_day))
+
+hist(Bag_Site$log10_biomass_day)
+
+
 
 Bag_Site %>%
   arrange(Second_Weight_bag_yield_est) %>%
@@ -157,18 +178,6 @@ Bag_Site$Fire.Interval<-factor(Bag_Site$Fire.Interval, levels = c('Short','Long'
 Bag_Site$Fire.Severity<-factor(Bag_Site$Fire.Severity, levels = c('Low','High'))
 
 
-#add instillation date
-Bag_Site$harvest_date<-as_date(Bag_Site$harvest_date)
-Bag_Site$Bag_Install<-as_date(Bag_Site$Bag_Install)
-
-
-Bag_Site <- Bag_Site %>%
-  mutate(Days_Installed = as.integer(harvest_date - Bag_Install))%>%
-  arrange(Site,Days_Installed)
-
-  
-mean(Bag_Site$Days_Installed)
-sd(Bag_Site$Days_Installed)
 
 
 
