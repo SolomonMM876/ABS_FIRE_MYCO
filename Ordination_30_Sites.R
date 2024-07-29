@@ -16,6 +16,8 @@ Site_Precip_Temp_Elv <- read_excel("Processed_data/Site_Precip_Temp_Elv.xlsx")%>
   rename(Site=site)
 Site_Precip_Temp_Elv$Site= sub(c('ABS00|ABS0'),'',Site_Precip_Temp_Elv$Site) 
 
+Bag_Site<-read_excel('Processed_data/All_Bag_Site_Info.xlsx')
+
 
 #Nute and Veg data
 Nutrients_Transects<-read_excel('Processed_data/Nutrients_Transect_level.xlsx')
@@ -180,30 +182,43 @@ custom_palette <- unique(custom_palette)
 
 # finally produce the barplot
 Interval_Indicator<-out_Interval %>% 
-  ggplot(aes(x=Interval, y=count, fill=Genus,color=Species, text=SH_ID)) + # text aesthetic is for the ggplotly visualisation below
-  geom_bar(stat='identity', position=position_fill()) + 
+  ggplot(aes(x=Interval, y=count, fill=Genus, text=SH_ID)) + # text aesthetic is for the ggplotly visualisation below
+  geom_bar(stat = 'identity', position = position_stack(), width = 0.4) +
   scale_x_discrete(drop=FALSE) + 
   scale_fill_manual(values = custom_palette) +  #palette.pals()
-  scale_y_continuous(labels = scales::percent) + 
-  labs(y='Percentage') + 
-  theme_bw() 
+  #scale_y_continuous(labels = scales::percent) + 
+  theme_classic()+
+  theme(axis.text.x = element_text(hjust = 0.5,size=20),
+        axis.text.y = element_text(size=20),
+        axis.title.x = element_text(size=25),
+        axis.title.y = element_text(size=25),
+        legend.text = element_text(size = 15),  # Increase legend text size
+        legend.title = element_text(size = 18) )+
+  guides(fill = guide_legend(override.aes = list(shape = 16, size = 15))) +
+  labs(y='Sequence Read Count', x= 'Fire Interval') 
 
 Interval_Indicator
 
 Severity_Indicator<-out_Severity %>% 
-  ggplot(aes(x=Severity, y=count, fill=Genus,color=Species, text=SH_ID)) + # text aesthetic is for the ggplotly visualisation below
-  geom_bar(stat='identity', position=position_fill()) + 
+  ggplot(aes(x=Severity, y=count, fill=Genus, text=SH_ID)) + # text aesthetic is for the ggplotly visualisation below
+  geom_bar(stat = 'identity', position = position_stack(), width = 0.4) +
   scale_x_discrete(drop=FALSE) + 
   scale_fill_manual(values = custom_palette) +  #palette.pals()
-  scale_y_continuous(labels = scales::percent) + 
-  labs(y='Percentage') + 
-  theme_bw() 
+  theme_classic()+
+  theme(axis.text.x = element_text(hjust = 0.5,size=20),
+        axis.text.y = element_text(size=20),
+        axis.title.x = element_text(size=25),
+        axis.title.y = element_text(size=25),
+        legend.text = element_text(size = 15),  # Increase legend text size
+        legend.title = element_text(size = 18) )+ # Increase legend title size)+
+  guides(fill = guide_legend(override.aes = list(shape = 16, size = 15 ))) +
+  labs(y='Sequence Read Count', x= 'Fire Severity') 
 
 Severity_Indicator
 
 
 # use this next lines to interactively get OTU IDs
-plotly::ggplotly(Severity_Indicator)
+plotly::ggplotly(Interval_Indicator)
 #######################
 
 
@@ -240,10 +255,12 @@ Cap1_aov<-as.data.frame( anova(cap1, by = "margin"))%>%
 plot(cap1)
 cap1 # summary of inertia
 proportions<-round(cap1$CCA$eig/cap1$tot.chi *100, 1) # proportion of variation associated with each axis
+proportions
 anova(cap1) # statistical significance of the constraint
 
 #cap_test <- capscale(mat_ecm ~ 1 , data=dat_ecm_30_site, distance='robust.aitchison', add=TRUE)
 #ordistep(cap_test, formula(cap1), direction='forward')
+
 #This is the only explainitory variable orditest leaves in
 
 cap2 <- capscale(mat_ecm ~ Interval
@@ -253,7 +270,7 @@ Cap2_aov<-as.data.frame( anova(cap2, by = "margin"))%>%
   rownames_to_column()
 plot(cap2)
 cap2 # summary of inertia
-proportions<-round(cap2$CCA$eig/cap2$tot.chi *100, 1) # proportion of variation associated with each axis
+proportions2<-round(cap2$CCA$eig/cap2$tot.chi *100, 1) # proportion of variation associated with each axis
 anova(cap2) # statistical significance of the constraint
 
 
@@ -261,7 +278,10 @@ anova(cap2) # statistical significance of the constraint
 # produce a nice plot
 # first extract scores from the resulting object and subset out different types of scores
 scrs <- scores(cap1, tidy=TRUE)
-scrs_spp <- scrs %>% filter(score=='species')
+scrs_spp <- scrs %>% filter(score=='species')%>%
+  filter(abs(CAP1) > 0.6 | abs(CAP2) > 0.6)%>%
+  rename(SH_ID=label)%>%
+  left_join(tax)
 scrs_site <- scrs %>% filter(score=='sites')
 scrs_cent <- scrs %>% filter(score=='centroids')
 scrs_biplot <- scrs %>% filter(score=='biplot')
@@ -270,28 +290,31 @@ scrs_biplot <- scrs %>% filter(score=='biplot')
 interval_colors <- c("Long" = "darkred", "Short" = "orange")
 
 # first plot - site scores along with centroids for each group
-p2<-cbind(dat_ecm_30_site, scrs_site) %>% 
+p2<-cbind(dat_ecm_30_site%>%left_join(Bag_Site %>% 
+        select(Site,Transect, Site_Pair)%>% unique(), by = c("Site","Transect"))
+          , scrs_site) %>% 
   ggplot(aes(x=CAP1, y=CAP2)) + 
   geom_vline(xintercept = c(0), color = "grey70", linetype = 2) +
   geom_hline(yintercept = c(0), color = "grey70", linetype = 2) +  
-  geom_point(aes( colour= Interval ,shape = Severity), size=8)+ 
+  geom_point(aes( colour= Interval,shape= Severity), size=8)+ 
   geom_text(aes( label = label), color= 'black', size=3)+
+  scale_shape_manual(values = c(19,17))+
   #geom_text(data = scrs_cent, aes(label = label), size = 2) + 
   scale_colour_manual(values = interval_colors) +     # Custom colors for Interval
   labs( x=  paste0("CAP1 (", proportions[1], "%)"), y=  paste0("CAP2 (", proportions[2], "%)"))+
-  geom_segment(data=scrs_spp%>%
+  geom_segment(data=scrs_cent%>%
                  filter(abs(CAP1) > 0.6 | abs(CAP2) > 0.6),
                inherit.aes = FALSE,
                aes(x=0,y=0, xend=CAP1, yend=CAP2, group=label),
                arrow = arrow(type = "closed",length=unit(3,'mm')),
                color= 'black') +
-  geom_text_repel(data=scrs_spp%>%
+  geom_text_repel(data=scrs_cent%>%
                     filter(abs(CAP1) > 0.6 | abs(CAP2) > 0.6)%>%
                     rename(SH_ID=label)%>%
                     left_join(tax),
                   inherit.aes = FALSE,
-                  aes(x=CAP1, y=CAP2, label=Species),
-                  colour='black',size=7)+
+                  aes(x=CAP1, y=CAP2, label=SH_ID),
+                  colour='black',size=10)+
   xlim(c(min(scrs_site[, 'CAP1']), max(scrs_site[, 'CAP1']))) + 
   ylim(c(min(scrs_site[, 'CAP2']), max(scrs_site[, 'CAP2']))) + 
   theme_classic()+
@@ -299,19 +322,23 @@ p2<-cbind(dat_ecm_30_site, scrs_site) %>%
         axis.text.y = element_text(size=20),
         axis.title.x = element_text(size=25),
         axis.title.y = element_text(size=25) )+
-  guides(color = guide_legend(override.aes = list(shape = 16, size = 12)),
+  guides(color = guide_legend(override.aes = list(shape = 16, size = 15)),
          shape = guide_legend(override.aes = list(color = "black", size = 12))) +
   theme(legend.position='top')
   
 p2
 
+
+left_join(Bag_Site %>% select(Site,Transect, Site_Pair)%>% unique(), by = c("Site","Transect"))%>%
+  
+
 # plot side-by-side using the patchwork package
-library(patchwork)
+#library(patchwork)
 #p1 + p2
 
 
 # top ten otus associated with the top of the ordination, presumably '???' samples
-scrs_spp %>% 
+  scrs_spp%>% 
   arrange(desc(CAP2)) %>% 
   head(10) -> inv_otus
 # taxonomic information for those otus
@@ -363,11 +390,11 @@ vif.cca(cap.cl)
 vp <- varpart(vegdist(mat_ecm, distance='robust.aitchison'), 
               ~Interval+Total.P, # Most sig factors tested, though Interval is actually sig = X1
               ~  Annual_Prec + elev , # climate = X2
-              ~ PCNM7 + PCNM1 + PCNM8 + PCNM4, # spatial = X3
+             # ~ PCNM7 + PCNM1 + PCNM8 + PCNM4, # spatial = X3
               ~ Site # Effect of site = X4
             , data=temp)
 vp
-plot(vp, Xnames=c('Regime', 'Climate', 'Spatial','Site'))
+plot(vp, Xnames=c('Regime', 'Climate','Site'))
 
 # test unique variation explained by partitions using partial CAPs
 # 1 - associated with Fire REgime

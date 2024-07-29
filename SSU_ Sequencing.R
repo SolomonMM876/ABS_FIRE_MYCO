@@ -7,7 +7,7 @@ library(ggplot2)
 library(readxl)
 
 #OTU Coutibble#OTU Counts
-SSU_NANOPORE <-read_table("Raw_data/Sequence/SSU_NANOPORE.csv",col_types = cols( .default = col_number()))
+SSU_NANOPORE <-read_table("Raw_data/Sequence/SSU/SSU_NANOPORE.csv",col_types = cols( .default = col_number()))
 colnames(SSU_NANOPORE) <- gsub('"', '', colnames(SSU_NANOPORE))
 SSU_NANOPORE$Site <- gsub(".*so", "", SSU_NANOPORE$Site)
 SSU_NANOPORE<-SSU_NANOPORE[-3,] #I just removed one replicate so I can run the rest of this stuff
@@ -34,7 +34,7 @@ Site_Info<-read_excel("Raw_data/Site_Info_12_Short.xlsx")[,-1]%>%
   
 
 #ID of OTU's
-tax <- read_csv("Raw_data/Sequence/parsed_otus.csv")
+tax <- read_csv("Raw_data/Sequence/SSU/parsed_otus.csv")
   
 
 

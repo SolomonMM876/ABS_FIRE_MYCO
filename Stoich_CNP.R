@@ -8,6 +8,8 @@ library(stringr)
 
 DW_CNP <- read_excel("Raw_data/DW_subsample_DNA_CNP.xlsx")
 Bag_Site<-read_excel('Processed_data/All_Bag_Site_Info.xlsx')
+#Nutrient resins
+Resin_Nutrients<-read_excel('Processed_data/Resin_Nutrients.xlsx')
 
 Manual_Calc_Total_P <- read_excel("Raw_data/Stoich/Manual Calc_Total P.xlsx", 
                                   sheet = "2nd Run")
@@ -67,6 +69,16 @@ CNH<-Hyphae_CN%>%
          Fire.Severity= if_else(is.na(Fire.Severity),'Standards',Fire.Severity),
          C_N = Carbon/Nitrogen)
 
+
+CNH%>%
+summarise(
+  mean_Carbon = mean(Carbon, na.rm = TRUE),
+  sd_Carbon = sd(Carbon, na.rm = TRUE),
+  mean_Nitrogen = mean(Nitrogen, na.rm = TRUE),
+  sd_Nitrogen = sd(Nitrogen, na.rm = TRUE),
+  mean_C_N= mean(C_N),
+  sd_C_N=sd(C_N)
+)
 
 
 CNH%>%

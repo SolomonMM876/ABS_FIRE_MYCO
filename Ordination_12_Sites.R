@@ -22,6 +22,7 @@ VEG_COVER_Transects$Site= sub(c('ABS00|ABS0'),'',VEG_COVER_Transects$Site)
 VEG_COVER_Transects$Transect= sub(c('T'),'',VEG_COVER_Transects$Transect)
 
 
+
 #import Blast ID df and clean data
 Blast_ID<-read_excel('Raw_data/Updated_Data/ABS.MER.fielddata.Feb.2023_Site.Info_AF.xlsx')
 Blast_ID$Site= sub(c('ABS00|ABS0'),'',Blast_ID$Site)
