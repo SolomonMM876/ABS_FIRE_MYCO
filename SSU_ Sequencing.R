@@ -118,22 +118,22 @@ p2<-cbind(dat_ssu, scrs_site) %>%
   geom_vline(xintercept = c(0), color = "grey70", linetype = 2) +
   geom_hline(yintercept = c(0), color = "grey70", linetype = 2) +  
   geom_text(aes( label = label), color= 'black', size=3)+
-  geom_point(aes( colour= Interval ), size=8)+ 
+  geom_point(aes( colour= Interval ,shape = Severity), size=8)+ 
   scale_colour_manual(values = interval_colors) +     # Custom colors for Interval
   #geom_text(data = scrs_cent, aes(label = label), size = 2) + 
  labs( x=  paste0("CAP1 (", proportions_CAP[1], "%)"), y=  paste0("CAP2 (", proportions_CAP[2], "%)"))+
-  geom_segment(data=scrs_spp%>%
+  geom_segment(data=scrs_cent%>%
                filter(abs(CAP1) > 0.5 | abs(CAP2) > 0.5),
                inherit.aes = FALSE,
                aes(x=0,y=0, xend=CAP1, yend=CAP2, group=label),
                arrow = arrow(type = "closed",length=unit(3,'mm')),
                color= 'black') +
-  geom_text_repel(data=scrs_spp%>%
-                    filter(abs(CAP1) > 0.5 | abs(CAP2) > 0.5)%>%
+  geom_text_repel(data=scrs_cent%>%
+                    filter(abs(CAP1) > 0.6 | abs(CAP2) > 0.6)%>%
                     rename(OTU_ID=label)%>%
                     left_join(tax),
                   inherit.aes = FALSE,
-                  aes(x=CAP1, y=CAP2, label=genus),
+                  aes(x=CAP1, y=CAP2, label=OTU_ID),
                   colour='black',size=7)+
 
   theme_classic()+

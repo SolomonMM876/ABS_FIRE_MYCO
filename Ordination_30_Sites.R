@@ -126,12 +126,12 @@ dat_ecm_30_site <- left_join(Blast_ID,  mat %>%
 
 # first analysis - indicator species analysis 
 # identify OTUs that are overrepresented in samples coming from fire interval
-res_Interval<-multipatt(dat_ecm_30_site%>% select(starts_with('SH')), # first argument is the community table, select only those columns
+res_Interval<-multipatt(dat_ecm_30_site%>% select(ends_with('.09FU')), # first argument is the community table, select only those columns
                         dat_ecm_30_site$Interval) 
 summary(res_Interval)
 
 
-res_Severity<-multipatt(dat_ecm_30_site%>% select(starts_with('SH')), # first argument is the community table, select only those columns
+res_Severity<-multipatt(dat_ecm_30_site%>% select(ends_with('.09FU')), # first argument is the community table, select only those columns
                         dat_ecm_30_site$Severity) 
 summary(res_Severity)
 
@@ -180,9 +180,19 @@ custom_palette <- c(brewer.pal(12, "Set3"), brewer.pal(8, "Set2"), brewer.pal(9,
 # Ensure I have enough unique colors
 custom_palette <- unique(custom_palette)
 
+
+#calculate relative abundance
+p<-dat_ecm_30_site%>% select(ends_with('.09FU'))%>% 
+  pivot_longer(cols=ends_with('.09FU'), names_to='SH_ID', 
+               values_to='count')%>%left_join(tax)%>%
+  summarise(sum(count))
+
+p
+
+
 # finally produce the barplot
 Interval_Indicator<-out_Interval %>% 
-  ggplot(aes(x=Interval, y=count, fill=Genus, text=SH_ID)) + # text aesthetic is for the ggplotly visualisation below
+  ggplot(aes(x=Interval, y=(count/69173)*100, fill=Genus, text=SH_ID)) + # text aesthetic is for the ggplotly visualization below
   geom_bar(stat = 'identity', position = position_stack(), width = 0.4) +
   scale_x_discrete(drop=FALSE) + 
   scale_fill_manual(values = custom_palette) +  #palette.pals()
@@ -195,12 +205,12 @@ Interval_Indicator<-out_Interval %>%
         legend.text = element_text(size = 15),  # Increase legend text size
         legend.title = element_text(size = 18) )+
   guides(fill = guide_legend(override.aes = list(shape = 16, size = 15))) +
-  labs(y='Sequence Read Count', x= 'Fire Interval') 
+  labs(y='Relative Abundance %', x= 'Fire Interval') 
 
 Interval_Indicator
 
 Severity_Indicator<-out_Severity %>% 
-  ggplot(aes(x=Severity, y=count, fill=Genus, text=SH_ID)) + # text aesthetic is for the ggplotly visualisation below
+  ggplot(aes(x=Severity, y=(count/69173)*100, fill=Genus, text=SH_ID)) + # text aesthetic is for the ggplotly visualisation below
   geom_bar(stat = 'identity', position = position_stack(), width = 0.4) +
   scale_x_discrete(drop=FALSE) + 
   scale_fill_manual(values = custom_palette) +  #palette.pals()
@@ -212,7 +222,7 @@ Severity_Indicator<-out_Severity %>%
         legend.text = element_text(size = 15),  # Increase legend text size
         legend.title = element_text(size = 18) )+ # Increase legend title size)+
   guides(fill = guide_legend(override.aes = list(shape = 16, size = 15 ))) +
-  labs(y='Sequence Read Count', x= 'Fire Severity') 
+  labs(y='Relative Abundance %', x= 'Fire Severity') 
 
 Severity_Indicator
 
@@ -288,6 +298,8 @@ scrs_biplot <- scrs %>% filter(score=='biplot')
 
 
 interval_colors <- c("Long" = "darkred", "Short" = "orange")
+scrs_cent$label <- c("Interval (Long)", "Interval (Short)", "Severity (High)", "Severity (Low)")
+
 
 # first plot - site scores along with centroids for each group
 p2<-cbind(dat_ecm_30_site%>%left_join(Bag_Site %>% 
@@ -296,10 +308,9 @@ p2<-cbind(dat_ecm_30_site%>%left_join(Bag_Site %>%
   ggplot(aes(x=CAP1, y=CAP2)) + 
   geom_vline(xintercept = c(0), color = "grey70", linetype = 2) +
   geom_hline(yintercept = c(0), color = "grey70", linetype = 2) +  
-  geom_point(aes( colour= Interval,shape= Severity), size=8)+ 
-  geom_text(aes( label = label), color= 'black', size=3)+
-  scale_shape_manual(values = c(19,17))+
-  #geom_text(data = scrs_cent, aes(label = label), size = 2) + 
+  geom_point(aes( colour= Interval,shape= Severity), size=8, stroke = 3)+ 
+  #geom_text(aes( label = label), color= 'black', size=3)+
+  scale_shape_manual(values = c(19,1))+
   scale_colour_manual(values = interval_colors) +     # Custom colors for Interval
   labs( x=  paste0("CAP1 (", proportions[1], "%)"), y=  paste0("CAP2 (", proportions[2], "%)"))+
   geom_segment(data=scrs_cent%>%
@@ -310,8 +321,7 @@ p2<-cbind(dat_ecm_30_site%>%left_join(Bag_Site %>%
                color= 'black') +
   geom_text_repel(data=scrs_cent%>%
                     filter(abs(CAP1) > 0.6 | abs(CAP2) > 0.6)%>%
-                    rename(SH_ID=label)%>%
-                    left_join(tax),
+                    rename(SH_ID=label),
                   inherit.aes = FALSE,
                   aes(x=CAP1, y=CAP2, label=SH_ID),
                   colour='black',size=10)+
@@ -322,8 +332,8 @@ p2<-cbind(dat_ecm_30_site%>%left_join(Bag_Site %>%
         axis.text.y = element_text(size=20),
         axis.title.x = element_text(size=25),
         axis.title.y = element_text(size=25) )+
-  guides(color = guide_legend(override.aes = list(shape = 16, size = 15)),
-         shape = guide_legend(override.aes = list(color = "black", size = 12))) +
+  guides(color = guide_legend(override.aes = list(shape = 19, size = 20)),
+         shape = guide_legend(override.aes = list(color = "black", size = 20))) +
   theme(legend.position='top')
   
 p2

@@ -41,8 +41,9 @@ bag_data<-bag_data%>%
          dirt_in_sample = if_else(any(dirt_in_sample == 'y', na.rm = TRUE), 'y', NA_character_),
          mass_loss = first(mass_loss))%>%
   select(-Rep)%>%
-  distinct()%>%
-  filter(!Tube_ID==84)
+  distinct()
+#%>%
+ # filter(!Tube_ID==84)
 
 
 
@@ -72,7 +73,7 @@ bag_avg<-bag_myc%>%
   group_by(Site,Transect,Location) %>%
   #remove missing or damaged bags
   filter(!str_detect(Damage, 'moderate|extreme|major')|str_detect(Missing,'y'))%>%
-  #remove samples with only one bag,samples over 20 
+  #remove samples with only one bag,locations over 20g because it seems like the weight where the bags arent damaged
   filter(harvest_w>20) %>%
   mutate(undamaged_harvest_w = sum(harvest_w, na.rm = TRUE))%>%
   group_by(Site,Transect)%>%
@@ -154,15 +155,28 @@ sd(Bag_Site$Days_Installed)
 Bag_Site$log10_Second_Weight_bag_yield_est <- log10(Bag_Site$Second_Weight_est_yield)
 Bag_Site$log10_Second_Weight_est_yield_all_corrected <- log10(Bag_Site$Second_Weight_est_yield_all_corrected)
 
+#g/hectare:
+#10,000 m^2 ×0.1 m= 1,000 m^3 
+#1,000m^3 x (x mg /15cm^3) x (1g/1000mg) x 1000kg/ton x 1000g/kg= g/ha
+(1e+06/15)
+
 
 Bag_Site<-Bag_Site%>%
   mutate(Biomass_day=as.numeric(Second_Weight_est_yield/Days_Installed),
          log10_biomass_day= log10(Biomass_day),
          Biomass_day_all_cor=as.numeric(Second_Weight_est_yield_all_corrected/Days_Installed),
-         log10_biomass_day_all_cor= log10(Biomass_day_all_cor)
-         )
+         biomass_g_ha_day= Biomass_day_all_cor*(1e+06/15),#convert to g/ha/day 
+         log10_biomass_day_all_cor= log10(Biomass_day_all_cor))
 
-hist(Bag_Site$log10_biomass_day)
+Bag_Site%>%
+  summarise(all_mean= mean(biomass_g_ha_day, na.rm=TRUE))
+         
+
+
+Bag_Site%>%
+  ggplot(aes(x=Site,y=biomass_g_ha_day))+
+           geom_col(aes(fill=Transect),position = "dodge")+
+  facet_grid(~Fire.Severity,scales = "free_x")
 
 
 

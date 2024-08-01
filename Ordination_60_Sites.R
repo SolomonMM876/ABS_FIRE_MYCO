@@ -175,7 +175,7 @@ custom_palette <- unique(custom_palette)
 
 # finally produce the barplot
 Interval_Indicator<-out_Interval %>% 
-  ggplot(aes(x=Interval, y=count, fill=Genus,color=Species, text=SH_ID)) + # text aesthetic is for the ggplotly visualisation below
+  ggplot(aes(x=Interval, y=count, fill=Genus, text=SH_ID)) + # text aesthetic is for the ggplotly visualisation below
   geom_bar(stat='identity', position=position_fill()) + 
   scale_x_discrete(drop=FALSE) + 
   scale_fill_manual(values = custom_palette) +  #palette.pals()
@@ -186,7 +186,7 @@ Interval_Indicator<-out_Interval %>%
 Interval_Indicator
 
 Indicator_Severity<-out_Severity %>% 
-  ggplot(aes(x=Severity, y=count, fill=Genus,color=Species, text=SH_ID)) + # text aesthetic is for the ggplotly visualisation below
+  ggplot(aes(x=Severity, y=count, fill=Genus, text=SH_ID)) + # text aesthetic is for the ggplotly visualisation below
   geom_bar(stat='identity', position=position_fill()) + 
   scale_x_discrete(drop=FALSE) + 
   scale_fill_manual(values = custom_palette) +  #palette.pals()
@@ -198,7 +198,7 @@ Indicator_Severity
 
 
 # use this next lines to interactively get OTU IDs
-plotly::ggplotly(Interval_Severity)
+plotly::ggplotly(Indicator_Severity)
 #######################
 
 
@@ -263,9 +263,10 @@ cbind(dat_ecm, scrs_site) %>%
   ggplot(aes(x=CAP1, y=CAP2)) + 
   geom_vline(xintercept = c(0), color = "grey70", linetype = 2) +
   geom_hline(yintercept = c(0), color = "grey70", linetype = 2) +  
-  geom_point(aes( colour= Interval ,shape = Severity), size=6)+ 
-  geom_text(aes( label = label), color= 'black', size=3)+
+  geom_point(aes( colour= Interval,shape= Severity), size=8, stroke = 3)+ 
+  #geom_text(aes( label = label), color= 'black', size=3)+
   #geom_text(data = scrs_cent, aes(label = label), size = 2) + 
+  scale_shape_manual(values = c(19,1))+
   scale_colour_manual(values = interval_colors) +     # Custom colors for Interval
   labs( x=  paste0("CAP1 (", proportions[1], "%)"), y=  paste0("CAP2 (", proportions[2], "%)"))+
   geom_segment(data=scrs_spp%>%
@@ -285,7 +286,9 @@ cbind(dat_ecm, scrs_site) %>%
   xlim(c(min(scrs_site[, 'CAP1']), max(scrs_site[, 'CAP1']))) + 
   ylim(c(min(scrs_site[, 'CAP2']), max(scrs_site[, 'CAP2']))) + 
   theme_bw() + 
-  theme(legend.position='top')->p2
+  theme(legend.position='top')+
+  guides(color = guide_legend(override.aes = list(shape = 19, size = 20)),
+         shape = guide_legend(override.aes = list(color = "black", size = 20)))->p2
 
 p2
 
