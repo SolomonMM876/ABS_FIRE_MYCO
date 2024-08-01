@@ -160,7 +160,7 @@ Bag_Site$log10_Second_Weight_est_yield_all_corrected <- log10(Bag_Site$Second_We
 #1,000m^3 x (x mg /15cm^3) x (1g/1000mg) x 1000kg/ton x 1000g/kg= g/ha
 (1e+06/15)
 
-
+#Calculations
 Bag_Site<-Bag_Site%>%
   mutate(Biomass_day=as.numeric(Second_Weight_est_yield/Days_Installed),
          log10_biomass_day= log10(Biomass_day),
