@@ -280,9 +280,9 @@ cbind(dat_ecm, scrs_site) %>%
                     rename(SH_ID=label)%>%
                     left_join(tax),
                   inherit.aes = FALSE,
-                  aes(x=CAP1, y=CAP2, label=Species),
-                  colour='black',size=7)+
- # geom_text(data= scrs_cent[1:4,], aes( label = label), color= 'black', size=8)+
+                  aes(x=CAP1, y=CAP2, label=Genus),
+                  colour='black',size=7, fontface="bold")+
+ #geom_text(data= scrs_cent[1:4,], aes( label = label), color= 'black', size=8)+
   xlim(c(min(scrs_site[, 'CAP1']), max(scrs_site[, 'CAP1']))) + 
   ylim(c(min(scrs_site[, 'CAP2']), max(scrs_site[, 'CAP2']))) + 
   theme_bw() + 

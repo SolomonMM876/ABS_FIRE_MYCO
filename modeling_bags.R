@@ -47,7 +47,7 @@ plot(m_biomass_day_resins)
 qqPlot(resid(m_biomass_day_resins))
 r2(m_biomass_day_resins)
 emm_biomass_resins<-as.data.frame(emmeans(m_biomass_day_resins,
-                                          ~Fire.Interval ))
+                                          ~Fire.Interval))
 
 
 #Ortho P and Biomass
@@ -82,15 +82,18 @@ ggplot(aes(x, Biomass_day)) +
 #Fire interval and biomass
 interval_colors <- c("Long" = "darkred", "Short" = "orange")
 
+
+
 p<-ggplot(emm_biomass_resins, aes(x = Fire.Interval, y = (10^(emmean)*(1e+06/15))) )+
   geom_col(aes(fill=Fire.Interval),size=4, width = .7) +
   geom_errorbar(aes(ymin = ((10^lower.CL)*(1e+06/15)),
                     ymax = ((10^upper.CL)*(1e+06/15)), width = 0.2 ),
                 width= .4, size= 1.5) +
+  geom_point(data=Bag_data, aes(x=Fire.Interval, y=(Biomass_day_all_cor)*(1e+06/15)), size=3, alpha=.6)+ 
   labs(x = "Fire Interval", y = "Hyphal Production (g/ha/day)") +
   scale_fill_manual(values = interval_colors) +     # Custom colors for Interval
-  scale_y_continuous(breaks = seq(0, 600, by = 100)) +
-  annotate("text", x = 1.7, y = Inf, label = paste0("Interval (p) = ", Anova_resin$`Pr(>F)`[3]),
+  #scale_y_continuous(breaks = seq(0, 600, by = 100)) +
+  annotate("text", x = 1.9, y = Inf, label = paste0("Interval (p) = ", Anova_resin$`Pr(>F)`[3]),
            hjust = 2.5, vjust = 1.5, size = 12)+
   theme_classic()+
   theme(axis.text.x = element_text( hjust = 0.5, size = 25, face = "bold"),
@@ -100,9 +103,25 @@ p<-ggplot(emm_biomass_resins, aes(x = Fire.Interval, y = (10^(emmean)*(1e+06/15)
         axis.line = element_line(size = 1.5),
         legend.position = 'none')
 
-
 p
 
+
+p<-ggplot(Bag_data, aes(x = Fire.Interval, y = (Biomass_day_all_cor)*(1e+06/15)))+
+  geom_boxplot(aes(fill=Fire.Interval), width = .7) +
+  labs(x = "Fire Interval", y = "Hyphal Production (g/ha/day)") +
+  scale_fill_manual(values = interval_colors) +   
+  #scale_y_continuous(breaks = seq(0, 600, by = 100)) +
+  annotate("text", x = 1.9, y = Inf, label = paste0("Interval (p) = ", Anova_resin$`Pr(>F)`[3]),
+           hjust = 2.5, vjust = 1.5, size = 12)+
+  theme_classic()+
+  theme(axis.text.x = element_text( hjust = 0.5, size = 25, face = "bold"),
+        axis.text.y = element_text(size = 23, face = "bold"),
+        axis.title.x = element_text(size = 30, face = "bold"),
+        axis.title.y = element_text(size = 27, face = "bold"),
+        axis.line = element_line(size = 1.5),
+        legend.position = 'none')
+
+p
 plotly::ggplotly(p)
 
 emm_biomass_resins%>%
@@ -120,29 +139,29 @@ Bag_Site%>%
   geom_col(aes(fill=Transect),position = "dodge")+
   facet_grid(~Fire.Severity,scales = "free_x")
 
-# severity_colors <- c("High" = "forestgreen", "Low" = "yellow")
-# 
-# 
-# p<-ggplot(emm_biomass_resins, aes(x = Fire.Severity, y = (10^(emmean)*(1e+06/15))) )+
-#   geom_col(aes(fill=Fire.Severity),size=4, width = .7) +
-#   geom_errorbar(aes(ymin = ((10^lower.CL)*(1e+06/15)),
-#                     ymax = ((10^upper.CL)*(1e+06/15)), width = 0.2 ),
-#                 width= .4, size= 1.5) +
-#   labs(x = "Fire Interval", y = "Hyphal Production (g/ha/day)") +
-#   scale_fill_manual(values = severity_colors) +     # Custom colors for Interval
-#   scale_y_continuous(breaks = seq(0, 600, by = 100)) +
-#   annotate("text", x = 1.7, y = Inf, label = paste0("Severity (p) = ", Anova_resin$`Pr(>F)`[4]),
-#            hjust = 2.5, vjust = 1.5, size = 12)+
-#   theme_classic()+
-#   theme(axis.text.x = element_text( hjust = 0.5, size = 25, face = "bold"),
-#         axis.text.y = element_text(size = 23, face = "bold"),
-#         axis.title.x = element_text(size = 30, face = "bold"),
-#         axis.title.y = element_text(size = 27, face = "bold"),
-#         axis.line = element_line(size = 1.5),
-#         legend.position = 'none')
-# 
-# 
-# p
+severity_colors <- c("High" = "darkolivegreen", "Low" = "cornflowerblue")
+
+
+p<-ggplot(emm_biomass_resins, aes(x = Fire.Severity, y = (10^(emmean)*(1e+06/15))) )+
+  geom_col(aes(fill=Fire.Severity),size=4, width = .7) +
+  geom_errorbar(aes(ymin = ((10^lower.CL)*(1e+06/15)),
+                    ymax = ((10^upper.CL)*(1e+06/15)), width = 0.2 ),
+                width= .4, size= 1.5) +
+  labs(x = "Fire Severity", y = "Hyphal Production (g/ha/day)") +
+  scale_fill_manual(values = severity_colors) +     # Custom colors for Interval
+  scale_y_continuous(breaks = seq(0, 600, by = 100)) +
+  annotate("text", x = 1.9, y = Inf, label = paste0("Severity (p) = ", Anova_resin$`Pr(>F)`[4]),
+           hjust = 2.5, vjust = 1.5, size = 12)+
+  theme_classic()+
+  theme(axis.text.x = element_text( hjust = 0.5, size = 25, face = "bold"),
+        axis.text.y = element_text(size = 23, face = "bold"),
+        axis.title.x = element_text(size = 30, face = "bold"),
+        axis.title.y = element_text(size = 27, face = "bold"),
+        axis.line = element_line(size = 1.5),
+        legend.position = 'none')
+
+
+p
 
 
 
@@ -208,7 +227,7 @@ ggplot(emm_Interval, aes(x = Fire.Interval, y = (10^(emmean)*(1e+06/15))) )+
 r2(m1_day)
 
 #2
-m2<-lmer(Bray.P~   Fire.Interval + Fire.Severity + (1|Site) , data=Bag_Site)
+m2<-lmer(log10(Ortho_P_mg_kg) ~   Fire.Interval + Fire.Severity + (1|Site) , data=Bag_data)
 m3<-lmer(NH4~   Fire.Interval + Fire.Severity + (1|Site) , data=Bag_Site)
 m4<-lmer(NO3~   Fire.Interval  + Fire.Severity+ (1|Site) , data=Bag_Site)
 m5<-lmer(NO3~   log10_myc_bag_yield_est + (1|Site) , data=Bag_Site)
@@ -259,7 +278,7 @@ p<-ggplot(emm_C_N_Interval, aes(x = Fire.Interval, y = 1/emmean) )+
 
 plotly::ggplotly(p)
 
-
+hist(log10(Bag_data$Ortho_P_mg_kg))
 
 
 

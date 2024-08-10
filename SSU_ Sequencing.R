@@ -56,7 +56,7 @@ data_long <- pivot_longer(dat_ssu, cols = starts_with("OTU_"), names_to = "OTU_I
   left_join(tax)
 
 
-ggplot(data_long, aes(x = Site, y = Count, fill = genus)) +
+ggplot(data_long, aes(x = Site, y = Count, fill = family)) +
   geom_bar(stat = 'identity', position = 'stack') +
   facet_wrap(~ Interval,scales = 'free_x') +
   theme_classic() +
@@ -118,7 +118,8 @@ p2<-cbind(dat_ssu, scrs_site) %>%
   geom_vline(xintercept = c(0), color = "grey70", linetype = 2) +
   geom_hline(yintercept = c(0), color = "grey70", linetype = 2) +  
   geom_text(aes( label = label), color= 'black', size=3)+
-  geom_point(aes( colour= Interval ,shape = Severity), size=8)+ 
+  geom_point(aes( colour= Interval,shape= Severity), size=8, stroke = 3)+ 
+  scale_shape_manual(values = c(19,1))+
   scale_colour_manual(values = interval_colors) +     # Custom colors for Interval
   #geom_text(data = scrs_cent, aes(label = label), size = 2) + 
  labs( x=  paste0("CAP1 (", proportions_CAP[1], "%)"), y=  paste0("CAP2 (", proportions_CAP[2], "%)"))+
@@ -135,12 +136,13 @@ p2<-cbind(dat_ssu, scrs_site) %>%
                   inherit.aes = FALSE,
                   aes(x=CAP1, y=CAP2, label=OTU_ID),
                   colour='black',size=7)+
-
   theme_classic()+
   theme(axis.text.x = element_text(angle = -45, hjust = 0.5,size=20),
         axis.text.y = element_text(size=20),
         axis.title.x = element_text(size=25),
         axis.title.y = element_text(size=25) )+
-  theme(legend.position='top')
+  theme(legend.position='top')+
+  guides(color = guide_legend(override.aes = list(shape = 19, size = 20)),
+                                      shape = guide_legend(override.aes = list(color = "black", size = 20)))
 
 p2

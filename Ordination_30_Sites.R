@@ -177,9 +177,10 @@ library(RColorBrewer)
 # Generate a custom color palette by combining multiple RColorBrewer palettes
 custom_palette <- c(brewer.pal(12, "Set3"), brewer.pal(8, "Set2"), brewer.pal(9, "Set1"))
 
-# Ensure I have enough unique colors
-custom_palette <- unique(custom_palette)
-
+library(Polychrome)
+set.seed(723451) # for reproducibility
+custom_palette <- createPalette(17, c("#ff0000"), M=1000)
+swatch(custom_palette)
 
 #calculate relative abundance
 p<-dat_ecm_30_site%>% select(ends_with('.09FU'))%>% 
@@ -192,26 +193,25 @@ p
 
 # finally produce the barplot
 Interval_Indicator<-out_Interval %>% 
-  ggplot(aes(x=Interval, y=(count/69173)*100, fill=Genus, text=SH_ID)) + # text aesthetic is for the ggplotly visualization below
-  geom_bar(stat = 'identity', position = position_stack(), width = 0.4) +
+  ggplot(aes(x=Interval, y=(count/69173)*100, fill=Species, text=SH_ID)) + # text aesthetic is for the ggplotly visualization below
+  geom_bar(aes(colour=Species),stat = 'identity' ,position = position_stack(), width = 0.4, color= 'black') +
   scale_x_discrete(drop=FALSE) + 
-  scale_fill_manual(values = custom_palette) +  #palette.pals()
-  #scale_y_continuous(labels = scales::percent) + 
   theme_classic()+
+  scale_fill_manual(values = custom_palette) + 
   theme(axis.text.x = element_text(hjust = 0.5,size=20),
         axis.text.y = element_text(size=20),
         axis.title.x = element_text(size=25),
         axis.title.y = element_text(size=25),
         legend.text = element_text(size = 15),  # Increase legend text size
         legend.title = element_text(size = 18) )+
-  guides(fill = guide_legend(override.aes = list(shape = 16, size = 15))) +
+  guides(fill = guide_legend(override.aes = list(shape = 16, size = 8))) +
   labs(y='Relative Abundance %', x= 'Fire Interval') 
 
 Interval_Indicator
 
 Severity_Indicator<-out_Severity %>% 
-  ggplot(aes(x=Severity, y=(count/69173)*100, fill=Genus, text=SH_ID)) + # text aesthetic is for the ggplotly visualisation below
-  geom_bar(stat = 'identity', position = position_stack(), width = 0.4) +
+  ggplot(aes(x=Severity, y=(count/69173)*100, fill=Species, text=SH_ID)) + # text aesthetic is for the ggplotly visualisation below
+  geom_bar(aes(color=Species), color= "black",stat = 'identity', position = position_stack(), width = 0.4) +
   scale_x_discrete(drop=FALSE) + 
   scale_fill_manual(values = custom_palette) +  #palette.pals()
   theme_classic()+
@@ -315,18 +315,17 @@ p2<-cbind(dat_ecm_30_site%>%left_join(Bag_Site %>%
   scale_shape_manual(values = c(19,1))+
   scale_colour_manual(values = interval_colors) +     # Custom colors for Interval
   labs( x=  paste0("CAP1 (", proportions[1], "%)"), y=  paste0("CAP2 (", proportions[2], "%)"))+
-  geom_segment(data=scrs_cent%>%
+  geom_segment(data=scrs_spp%>%
                  filter(abs(CAP1) > 0.6 | abs(CAP2) > 0.6),
                inherit.aes = FALSE,
-               aes(x=0,y=0, xend=CAP1, yend=CAP2, group=label),
+               aes(x=0,y=0, xend=CAP1, yend=CAP2, group=Genus),
                arrow = arrow(type = "closed",length=unit(3,'mm')),
                color= 'black') +
-  geom_text_repel(data=scrs_cent%>%
-                    filter(abs(CAP1) > 0.6 | abs(CAP2) > 0.6)%>%
-                    rename(SH_ID=label),
+  geom_text_repel(data=scrs_spp%>%
+                    filter(abs(CAP1) > 0.6 | abs(CAP2) > 0.6),
                   inherit.aes = FALSE,
-                  aes(x=CAP1, y=CAP2, label=SH_ID),
-                  colour='black',size=10)+
+                  aes(x=CAP1, y=CAP2, label=Genus),
+                  colour='black',size=10,fontface="bold")+
   xlim(c(min(scrs_site[, 'CAP1']), max(scrs_site[, 'CAP1']))) + 
   ylim(c(min(scrs_site[, 'CAP2']), max(scrs_site[, 'CAP2']))) + 
   theme_classic()+
