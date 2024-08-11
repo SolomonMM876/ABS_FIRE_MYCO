@@ -80,6 +80,9 @@ tax <- otu %>%
 tax[tax %in% grep('unclassified', tax, value=T)] <- NA
 # any species unclassified, change to NA
 tax[tax %in% grep('_sp$', tax, value=T)] <- NA
+#I am not sure why the code above does not work, but the code below does
+tax <- tax %>%
+  mutate(Species = ifelse(str_detect(Species, '_sp'), NA, Species))
 
 #change first col name to something easy
 names(otu)[1]<-'SH_ID'
@@ -197,7 +200,7 @@ Interval_Indicator<-out_Interval %>%
   geom_bar(aes(colour=Species),stat = 'identity' ,position = position_stack(), width = 0.4, color= 'black') +
   scale_x_discrete(drop=FALSE) + 
   theme_classic()+
-  scale_fill_manual(values = custom_palette) + 
+ # scale_fill_manual(values = custom_palette) + 
   theme(axis.text.x = element_text(hjust = 0.5,size=20),
         axis.text.y = element_text(size=20),
         axis.title.x = element_text(size=25),
@@ -213,7 +216,7 @@ Severity_Indicator<-out_Severity %>%
   ggplot(aes(x=Severity, y=(count/69173)*100, fill=Species, text=SH_ID)) + # text aesthetic is for the ggplotly visualisation below
   geom_bar(aes(color=Species), color= "black",stat = 'identity', position = position_stack(), width = 0.4) +
   scale_x_discrete(drop=FALSE) + 
-  scale_fill_manual(values = custom_palette) +  #palette.pals()
+  #scale_fill_manual(values = custom_palette) +  #palette.pals()
   theme_classic()+
   theme(axis.text.x = element_text(hjust = 0.5,size=20),
         axis.text.y = element_text(size=20),

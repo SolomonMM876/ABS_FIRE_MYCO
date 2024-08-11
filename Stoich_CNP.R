@@ -102,23 +102,28 @@ CNH%>%
   theme_classic()+
   theme(axis.text.x = element_text(angle = -45, hjust = 0.5))
 
+
+
+interval_colors <- c("Long" = "darkred", "Short" = "orange")
+
 CNH%>%
   filter(Sample_mg > .7)%>%
   filter(Fire.Interval!='Standards')%>%
-  ggplot(aes(x=Site) )+ 
-  geom_point(aes(y=C_N), size = 5, shape= 'triangle') +
-  geom_boxplot(aes(x=Fire.Interval, y= C_N))+
- # scale_color_manual(values = c("TRUE" = "red", "FALSE" = "black")) +
-  facet_grid(~Fire.Interval, scales = 'free_x')+
-  labs( y= ('C:N'))+
-  geom_hline(yintercept = 16, linetype = "dashed", color = "grey") +
+  ggplot(aes(x=Fire.Interval) )+ 
+  #geom_point(aes(y=C_N), size = 5, shape= 'triangle') +
+  geom_boxplot(aes(fill=Fire.Interval, y= C_N))+
+  scale_fill_manual(values = interval_colors) +     # Custom colors for Interval
+  labs(x = "Fire Interval", y = "Hyphal Carbon:Nitrogen") +
+  # annotate("text", x = 1.5, y = Inf, label = , hjust = 4, vjust = 1.1, size = 12)+
   theme_classic()+
-  theme(axis.text.x = element_text(angle = -45, hjust = 0.5,size=20),
-        axis.text.y = element_text(size=20),
-        axis.title.x = element_text(size=25),
-        axis.title.y = element_text(size=25))+
-  annotate("text", x = 6, y = Inf, label = "(F,P) =  (2.5317, 0.1461)", hjust = 1.1, vjust = 1.1, size = 5)
-  
+  theme(axis.text.x = element_text( hjust = 0.5, size = 25, face = "bold"),
+        axis.text.y = element_text(size = 23, face = "bold"),
+        axis.title.x = element_text(size = 30, face = "bold"),
+        axis.title.y = element_text(size = 27, face = "bold"),
+        axis.line = element_line(size = 1.5),
+        legend.position = 'none')
+
+  min(CNH$C_N)
 
 
 

@@ -77,7 +77,7 @@ ggplot(aes(x, Biomass_day)) +
 
 
 
-
+min(Bag_data$Biomass_day_all_cor)*(1e+06/15)
 
 #Fire interval and biomass
 interval_colors <- c("Long" = "darkred", "Short" = "orange")
@@ -106,22 +106,7 @@ p<-ggplot(emm_biomass_resins, aes(x = Fire.Interval, y = (10^(emmean)*(1e+06/15)
 p
 
 
-p<-ggplot(Bag_data, aes(x = Fire.Interval, y = (Biomass_day_all_cor)*(1e+06/15)))+
-  geom_boxplot(aes(fill=Fire.Interval), width = .7) +
-  labs(x = "Fire Interval", y = "Hyphal Production (g/ha/day)") +
-  scale_fill_manual(values = interval_colors) +   
-  #scale_y_continuous(breaks = seq(0, 600, by = 100)) +
-  annotate("text", x = 1.9, y = Inf, label = paste0("Interval (p) = ", Anova_resin$`Pr(>F)`[3]),
-           hjust = 2.5, vjust = 1.5, size = 12)+
-  theme_classic()+
-  theme(axis.text.x = element_text( hjust = 0.5, size = 25, face = "bold"),
-        axis.text.y = element_text(size = 23, face = "bold"),
-        axis.title.x = element_text(size = 30, face = "bold"),
-        axis.title.y = element_text(size = 27, face = "bold"),
-        axis.line = element_line(size = 1.5),
-        legend.position = 'none')
 
-p
 plotly::ggplotly(p)
 
 emm_biomass_resins%>%
@@ -131,7 +116,6 @@ emm_biomass_resins%>%
 # in Bag_data_New.R script I calc the biomass production per day and the log of that on lines 164-172
 Bag_Site%>%
   summarise(all_mean= mean(biomass_g_ha_day, na.rm=TRUE))
-
 
 
 Bag_Site%>%
