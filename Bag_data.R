@@ -73,24 +73,6 @@ initalmass_est = ((intial_bag_w_location * harvest_w) / undamaged_harvest_w))
                                              
 mutate(undamaged_harvest_w = sum(harvest_w[Missing != 'y' & !(Damage %in% c("moderate", "extreme"))]))
 
-,
-         
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

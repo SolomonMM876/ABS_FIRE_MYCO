@@ -35,7 +35,7 @@ Bag_data<-left_join(Bag_Site,Resin_Nutrients)%>%
 # m_biomass_resins<-lmer(log10_Second_Weight_bag_yield_est~  Ortho_P_mg_kg+ Nitrate_mg_kg+ 
 #                          Fire.Interval + Fire.Severity+ (1|Site/Transect) , 
 #                        data=Bag_data)
-m_biomass_day_resins<-lmer(log10_biomass_day_all_cor~  Ortho_P_mg_kg+ Nitrate_mg_kg+ 
+m_biomass_day_resins<-lmer(log10_biomass_day_all_cor~  Ortho_P_mg_kg+ Nitrate_mg_kg+ Ammonia_mg_kg+
                          Fire.Interval + Fire.Severity+ (1|Site/Transect) , 
                        data=Bag_data)
 

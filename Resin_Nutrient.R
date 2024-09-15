@@ -3,6 +3,8 @@ library(readr)
 library(lubridate)
 library(stringr)
 library(ggplot2)
+library(readxl)
+library(tidyr)
 
 Bag_Site_notes<-read_excel('Processed_data/All_Bag_Site_Info.xlsx')%>%
   select(Site:mass_loss,-harvest_date)
@@ -21,7 +23,7 @@ NH4NO3_RESIN_LOT_2$`Sample ID`[17:18]<-"7-1-3" #only sample unaccounted for
 # NH4NO3_RESIN_LOT_2<-NH4NO3_RESIN_LOT_2%>%
 #   mutate(Result = ifelse(`Test Name` == "Nitrate 2" & Result < 0, 0.0587/2, Result)) #replace negative values with lowest possible/2
 
-
+#lowest observable value 
 LOQ_NH4NO3<-(.0757+.0587)/2
 
 NO3_NH4_Resin<-bind_rows(NH4NO3_RESIN_LOT_1,NH4NO3_RESIN_LOT_2)[,-c(10:13)] %>%
@@ -55,12 +57,13 @@ NO3_NH4_Resin<-bind_rows(NH4NO3_RESIN_LOT_1,NH4NO3_RESIN_LOT_2)[,-c(10:13)] %>%
   left_join(Bag_Site_notes)%>%
   mutate(#calc blank avg for Nitr
     Blank_avg_Nitrate= mean(Nitrate[grepl("CTRL", Site)], na.rm = TRUE),
-    Blank_avg_Ammon = mean(Ammonia[grepl("CTRL", Site)], na.rm = TRUE),
-    Ammon_blanked = (Ammonia-Blank_avg_Ammon),
-    Ammonia_mg_kg= Ammon_blanked *(7.5/Nutrient_sub),
-    Nitrate_blanked = (Nitrate-Blank_avg_Nitrate),
-    Nitrate_blanked = ifelse(Nitrate_blanked < 0, LOQ_NH4NO3/2, Nitrate_blanked), #replace negative values with lowest possible/2
-    Nitrate_mg_kg= Nitrate_blanked*(7.5/Nutrient_sub))#7.5mL used for nutrient subset
+    # Blank_avg_Ammon = mean(Ammonia[grepl("CTRL", Site)], na.rm = TRUE),
+    # Ammon_blanked = (Ammonia-Blank_avg_Ammon),
+    Ammonia= ifelse(Ammonia < 0, LOQ_NH4NO3/2, Ammonia),#replace negative values with lowest possible/2
+    Ammonia_mg_kg= Ammonia *(7.5/Nutrient_sub),
+    #Nitrate_blanked = (Nitrate-Blank_avg_Nitrate),
+    Nitrate = ifelse(Nitrate < 0, LOQ_NH4NO3/2, Nitrate), #replace negative values with lowest possible/2
+    Nitrate_mg_kg= Nitrate*(7.5/Nutrient_sub))#7.5mL used for nutrient subset
 
 #rm(NH4NO3_RESIN_LOT_1,NH4NO3_RESIN_LOT_2)
 
@@ -79,6 +82,7 @@ p<-NO3_NH4_Resin%>%
   labs(x = 'Site', y = 'Ammonia (mg/kg)') 
 
 plotly::ggplotly(p)
+p
 
 p<-NO3_NH4_Resin%>%
   filter(!grepl("CTRL", Site), na.rm = TRUE)%>%
