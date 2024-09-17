@@ -90,7 +90,7 @@ mutate(undamaged_harvest_w = sum(harvest_w[Missing != 'y' & !(Damage %in% c("mod
    mutate(bead_total_weight = sum(Combined_weight, na.rm = TRUE))%>%
    group_by(Site)%>%
    mutate(site_mean_comb_w_bead = mean(bead_total_weight))%>%
-   select(Site,Transect site_mean_comb_w_bead)%>%
+   select(Site,Transect, site_mean_comb_w_bead)%>%
    #join undamaged site avgs
    distinct()%>%
    right_join(bag_myc,by = join_by(Site))%>%

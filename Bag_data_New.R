@@ -36,7 +36,7 @@ bag_data <- bag_data %>%
   group_by(Tube_ID) %>%
   mutate(
     harvest_date = first(harvest_date),
-    Nutrient_sub = mean(Nutrient_sub, na.rm = TRUE),
+    Nutrient_sub = mean(Nutrient_sub, na.rm = TRUE), #so I have this as mean, but for some locations I processed bags separately 
     Bead_weight = sum(Bead_weight, na.rm = TRUE),
     notes = paste(notes, collapse = " | "),
     roots_in_sample = paste(roots_in_sample, collapse = " | "),
@@ -48,7 +48,8 @@ bag_data <- bag_data %>%
   ) %>%
   select(-Rep) %>%
   distinct()
-
+#remove the sample that is a combination of 11-1-16 and 11-2-16
+bag_data<-bag_data%>%filter(Tube_ID!= 84)
 
 # Merge bag and mycorrhizal data by Tube_ID
 bag_myc <- left_join(bag_data, myc_data, by = 'Tube_ID') %>%
