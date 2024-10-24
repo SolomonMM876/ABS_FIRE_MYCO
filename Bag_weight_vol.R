@@ -19,6 +19,9 @@ Fresh_Bag_weights<-Fresh_Bag_weights%>%
          percentage_error_vol = (std_err_vol / mean_vol) * 100)
 
 
+Fresh_Bag_weights%>%
+  filter(Condition=='Dry')%>%
+  summarise(dry_w= mean(weight_g))
 
 # Box plots for the two bag conditions
  ggplot(Fresh_Bag_weights, aes(x = Condition, y = weight_g)) +

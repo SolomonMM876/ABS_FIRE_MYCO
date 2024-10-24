@@ -12,7 +12,7 @@ Bag_Site<-read_excel('Processed_data/All_Bag_Site_Info.xlsx')
 #both rows recorded 0 biomass because of harvest issue
 #Removed row 14 because both bags were found out of the ground 
 #Removed row 26 because no recorded biomass
-x <- which(rowSums(is.na(select(Bag_Site, myc))) > 0)
+x <- which(rowSums(is.na(select(Bag_Site, myc_2nd_w ))) > 0)
 Bag_Site[x, ]
 Bag_Site <- Bag_Site[-x, ]  # drop those rows
 Stoich_Totals <- read_excel("Raw_data/Stoich/Stoich_Totals_Round_1.xlsx")
@@ -21,11 +21,17 @@ Resin_Nutrients<-read_excel('Processed_data/Resin_Nutrients.xlsx')
 
 Bag_Site_Short<-Bag_Site%>%
   mutate(Regime = paste(Fire.Interval, Fire.Severity, sep = "_"))%>%
-  dplyr::select(Site,Transect,Bray.P:Dead.Tree.Canopy.Cover_perc,Pair,log10_Second_Weight_bag_yield_est:Regime)%>%
+  dplyr::select(Site,Transect,Bray.P:Dead.Tree.Canopy.Cover_perc,Pair,log10_myc_2nd_w_est_yield:Regime)%>%
   left_join(Stoich_Totals%>%rename(Carb_Hyph = Carbon, Nitrog_Hyph =Nitrogen, Phos_Hyph= Percent_Phos_))
 
 Bag_data<-left_join(Bag_Site,Resin_Nutrients)%>%
-  left_join(Stoich_Totals%>%rename(Carb_Hyph = Carbon, Nitrog_Hyph =Nitrogen, Phos_Hyph= Percent_Phos_))
+  left_join(Stoich_Totals%>%rename(Carb_Hyph = Carbon, Nitrog_Hyph =Nitrogen, Phos_Hyph= Percent_Phos_))%>%
+  #calc the average time between fire 
+  mutate(
+    diff1 = Most.Recent.Fire_Year - `2nd.Most.Recent.Fire_Year`,
+    diff2 = `2nd.Most.Recent.Fire_Year` - as.numeric(`3rd.Most.Recent.Fire_Year`),
+    fire.frequency = rowMeans(cbind(diff1, diff2), na.rm = TRUE)
+  )
 
 
 
@@ -35,8 +41,8 @@ Bag_data<-left_join(Bag_Site,Resin_Nutrients)%>%
 # m_biomass_resins<-lmer(log10_Second_Weight_bag_yield_est~  Ortho_P_mg_kg+ Nitrate_mg_kg+ 
 #                          Fire.Interval + Fire.Severity+ (1|Site/Transect) , 
 #                        data=Bag_data)
-m_biomass_day_resins<-lmer(log10_biomass_day_all_cor~  Ortho_P_mg_kg+ Nitrate_mg_kg+ Ammonia_mg_kg+
-                         Fire.Interval + Fire.Severity+ (1|Site/Transect) , 
+m_biomass_day_resins<-lmer(log10_biomass_day~  Ortho_P_mg_kg+ Nitrate_mg_kg+ Ammonia_mg_kg+
+                             fire.frequency + Fire.Severity+ (1|Site/Transect) , 
                        data=Bag_data)
 
 
@@ -46,9 +52,10 @@ Anova_resin
 plot(m_biomass_day_resins)
 qqPlot(resid(m_biomass_day_resins))
 r2(m_biomass_day_resins)
-emm_biomass_resins<-as.data.frame(emmeans(m_biomass_day_resins,
-                                          ~Fire.Interval))
-
+emm_biomass_Interval<-as.data.frame(emmeans(m_biomass_day_resins,
+                                          ~fire.frequency))
+emm_biomass_Severity<-as.data.frame(emmeans(m_biomass_day_resins,
+                                            ~Fire.Severity))
 
 #Ortho P and Biomass
 library(ggeffects)
@@ -59,7 +66,7 @@ predict_response(m_biomass_day_resins,terms= c('Ortho_P_mg_kg'), back_transform 
 ggplot(aes(x, Biomass_day)) +
   geom_line(color = "black", linewidth=2) +
   geom_ribbon(aes(ymin =confidence.low , ymax = confidence.high), alpha = 0.1)+
-  geom_point(data=Bag_data, mapping=aes(x=Ortho_P_mg_kg, y=(10^(log10_biomass_day_all_cor)*(1e+06/15))),
+  geom_point(data=Bag_data, mapping=aes(x=Ortho_P_mg_kg, y=(10^(log10_biomass_day)*(1e+06/15))),
              inherit_aes=FALSE, size=3)+
   labs(
     x = expression(paste(PO[4], " (mg/kg)")),
@@ -77,23 +84,23 @@ ggplot(aes(x, Biomass_day)) +
 
 
 
-min(Bag_data$Biomass_day_all_cor)*(1e+06/15)
+min(Bag_data$Biomass_day)*(1e+06/15)
 
 #Fire interval and biomass
 interval_colors <- c("Long" = "darkred", "Short" = "orange")
 
 
 
-p<-ggplot(emm_biomass_resins, aes(x = Fire.Interval, y = (10^(emmean)*(1e+06/15))) )+
-  geom_col(aes(fill=Fire.Interval),size=4, width = .7) +
+p<-ggplot(emm_biomass_Interval, aes(x = fire.frequency, y = (10^(emmean)*(1e+06/15))) )+
+  geom_col(aes(fill=fire.frequency),size=4, width = .7) +
   geom_errorbar(aes(ymin = ((10^lower.CL)*(1e+06/15)),
                     ymax = ((10^upper.CL)*(1e+06/15)), width = 0.2 ),
                 width= .4, size= 1.5) +
-  geom_point(data=Bag_data, aes(x=Fire.Interval, y=(Biomass_day_all_cor)*(1e+06/15)), size=3, alpha=.6)+ 
+  geom_point(data=Bag_data, aes(x=fire.frequency, y=(Biomass_day)*(1e+06/15)), size=3, alpha=.6)+ 
   labs(x = "Fire Interval", y = "Hyphal Production (g/ha/day)") +
-  scale_fill_manual(values = interval_colors) +     # Custom colors for Interval
+  #scale_fill_manual(values = interval_colors) +     # Custom colors for Interval
   #scale_y_continuous(breaks = seq(0, 600, by = 100)) +
-  annotate("text", x = 1.9, y = Inf, label = paste0("Interval (p) = ", Anova_resin$`Pr(>F)`[3]),
+  annotate("text", x = 1.9, y = Inf, label = paste0("Interval (p) = ", Anova_resin["fire.frequency", "Pr(>F)"]),
            hjust = 2.5, vjust = 1.5, size = 12)+
   theme_classic()+
   theme(axis.text.x = element_text( hjust = 0.5, size = 25, face = "bold"),
@@ -109,7 +116,7 @@ p
 
 plotly::ggplotly(p)
 
-emm_biomass_resins%>%
+emm_biomass_Interval%>%
   summarise(emmeans_avg= mean(emmean))%>%
   mutate(emmeans_biomass_g_ha_day= (10^emmeans_avg)*(1e+06/15))
 
@@ -126,7 +133,7 @@ Bag_Site%>%
 severity_colors <- c("High" = "darkolivegreen", "Low" = "cornflowerblue")
 
 
-p<-ggplot(emm_biomass_resins, aes(x = Fire.Severity, y = (10^(emmean)*(1e+06/15))) )+
+p<-ggplot(emm_biomass_Severity, aes(x = Fire.Severity, y = (10^(emmean)*(1e+06/15))) )+
   geom_col(aes(fill=Fire.Severity),size=4, width = .7) +
   geom_errorbar(aes(ymin = ((10^lower.CL)*(1e+06/15)),
                     ymax = ((10^upper.CL)*(1e+06/15)), width = 0.2 ),
@@ -134,7 +141,7 @@ p<-ggplot(emm_biomass_resins, aes(x = Fire.Severity, y = (10^(emmean)*(1e+06/15)
   labs(x = "Fire Severity", y = "Hyphal Production (g/ha/day)") +
   scale_fill_manual(values = severity_colors) +     # Custom colors for Interval
   scale_y_continuous(breaks = seq(0, 600, by = 100)) +
-  annotate("text", x = 1.9, y = Inf, label = paste0("Severity (p) = ", Anova_resin$`Pr(>F)`[4]),
+  annotate("text", x = 1.9, y = Inf, label = paste0("Severity (p) = ", Anova_resin["Fire.Severity", "Pr(>F)"]),
            hjust = 2.5, vjust = 1.5, size = 12)+
   theme_classic()+
   theme(axis.text.x = element_text( hjust = 0.5, size = 25, face = "bold"),
@@ -150,7 +157,7 @@ p
 
 
 #I trust the second round of weighing more, though both rounds produce similar results
-m1<-lmer(log10_Second_Weight_bag_yield_est~Fire.Severity+ Fire.Interval + (1|Site/Transect) , data=Bag_Site)
+m1<-lmer(log10_myc_2nd_w_est_yield~Fire.Severity+ Fire.Interval + (1|Site/Transect) , data=Bag_Site)
 
 #1
 summary(m1)
@@ -214,9 +221,9 @@ r2(m1_day)
 m2<-lmer(log10(Ortho_P_mg_kg) ~   Fire.Interval + Fire.Severity + (1|Site) , data=Bag_data)
 m3<-lmer(NH4~   Fire.Interval + Fire.Severity + (1|Site) , data=Bag_Site)
 m4<-lmer(NO3~   Fire.Interval  + Fire.Severity+ (1|Site) , data=Bag_Site)
-m5<-lmer(NO3~   log10_myc_bag_yield_est + (1|Site) , data=Bag_Site)
-m6<-lmer(NH4~   log10_myc_bag_yield_est + (1|Site) , data=Bag_Site)
-m7<-lmer(Bray.P~   log10_myc_bag_yield_est + (1|Site) , data=Bag_Site)
+m5<-lmer(NO3~   log10_myc_2nd_w_est_yield + (1|Site) , data=Bag_Site)
+m6<-lmer(NH4~   log10_myc_2nd_w_est_yield + (1|Site) , data=Bag_Site)
+m7<-lmer(Bray.P~   log10_myc_2nd_w_est_yield + (1|Site) , data=Bag_Site)
 
 hist(log10(Bag_Site_Short$C_N))
 hist(sqrt(Bag_Site_Short$C_N), main = "Square Root Transformation", xlab = "sqrt(C_N)")
@@ -227,7 +234,7 @@ z_score_transformed <- scale(Bag_Site_Short$C_N)
 hist(z_score_transformed, main = "Z-score Normalization", xlab = "Z-score of C_N")
 
 
-C_N_model<-lmer((1/C_N)~  Ortho_P_mg_kg+ Nitrate_mg_kg+ log10_biomass_day_all_cor +
+C_N_model<-lmer((1/C_N)~  Ortho_P_mg_kg+ Nitrate_mg_kg+ log10_myc_2nd_w_est_yield +
                   Fire.Interval + Fire.Severity+ (1|Site) , data=Bag_data)
 #8 C_N~ Fire Interval
 summary(C_N_model)
@@ -244,13 +251,12 @@ interval_colors <- c("Long" = "darkred", "Short" = "orange")
 
 
 p<-ggplot(emm_C_N_Interval, aes(x = Fire.Interval, y = 1/emmean) )+
-  geom_col(aes(fill=Fire.Interval),size=4, width = .7) +
+  geom_boxplot(aes(fill=Fire.Interval),size=4, width = .7) +
   geom_errorbar(aes(ymin = 1/lower.CL,
                     ymax = 1/upper.CL, width = 0.2 ),
                 width= .4, size= 1.5) +
   labs(x = "Fire Interval", y = "Hyphal Carbon:Nitrogen") +
   scale_fill_manual(values = interval_colors) +     # Custom colors for Interval
- # annotate("text", x = 1.5, y = Inf, label = , hjust = 4, vjust = 1.1, size = 12)+
   theme_classic()+
   theme(axis.text.x = element_text( hjust = 0.5, size = 25, face = "bold"),
         axis.text.y = element_text(size = 23, face = "bold"),
@@ -259,7 +265,7 @@ p<-ggplot(emm_C_N_Interval, aes(x = Fire.Interval, y = 1/emmean) )+
         axis.line = element_line(size = 1.5),
         legend.position = 'none')
 
-
+p
 plotly::ggplotly(p)
 
 hist(log10(Bag_data$Ortho_P_mg_kg))
@@ -313,8 +319,8 @@ r2(m7)
 grouped_Bag_Site <- Bag_Site %>%
   group_by(Fire.Interval) %>%
   summarise(
-    mean_yield = mean(10^log10_Second_Weight_bag_yield_est, na.rm = TRUE),
-    sd_yield = sd(10^log10_Second_Weight_bag_yield_est, na.rm = TRUE),
+    mean_yield = mean(10^log10_myc_2nd_w_est_yield, na.rm = TRUE),
+    sd_yield = sd(10^log10_myc_2nd_w_est_yield, na.rm = TRUE),
     count = n()
   )
 ###
@@ -337,7 +343,7 @@ p
 hist((Bag_Site$log10_Second_Weight_bag_yield_est))
 
 Bag_Site %>%
-  ggplot(aes(y = 10^(log10_biomass_day_all_cor),
+  ggplot(aes(y = 10^(log10_myc_2nd_w_est_yield),
              x = Fire.Interval)) +
   geom_boxplot(aes(), width = 0.1, fill = c('Dark Red', 'Orange')) +
   geom_point(aes(fill = Fire.Interval), alpha = 0.5, size = 2) +
@@ -354,7 +360,7 @@ Bag_Site %>%
   theme_minimal()
 
 Bag_Site %>%
-  ggplot(aes(y = 10^(log10_Second_Weight_bag_yield_est), x = Site,)) +
+  ggplot(aes(y = 10^(log10_myc_2nd_w_est_yield), x = Site,)) +
   geom_boxplot(aes(fill= Fire.Interval), width = 0.1) +
     scale_fill_manual(values = c("Long" = "darkred", "Short" = "orange")) +
   geom_point(aes(fill = Fire.Interval), alpha = 0.5, size = 2) +
@@ -417,7 +423,7 @@ Bag_Site %>%
 
 
 # Pairwise scatter plots to see relationships
-pairs(~ log10_biomass_day_all_cor+Nitrate_mg_kg + Ortho_P_mg_kg + Herb.Cover_0.50cm_perc:Live.Tree.Canopy.Cover_perc  , data = Bag_data)
+pairs(~ log10_myc_2nd_w_est_yield+Nitrate_mg_kg + Ortho_P_mg_kg + Herb.Cover_0.50cm_perc:Live.Tree.Canopy.Cover_perc  , data = Bag_data)
 
 
 
