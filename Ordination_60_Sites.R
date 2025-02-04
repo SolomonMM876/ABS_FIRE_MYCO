@@ -13,8 +13,9 @@ library(ggrepel)
 
 #All meta data from 60 sites
 Site_Precip_Temp_Elv <- read_excel("Processed_data/Site_Precip_Temp_Elv.xlsx")%>%
-  select(site,Annual_Temp,Annual_Prec,elev)%>%
-  rename(Site=site)
+  select(site,Annual_Temp,Annual_Prec,wc2.1_30s_elev)%>%
+  rename(Site=site,
+         elev=wc2.1_30s_elev)
 Site_Precip_Temp_Elv$Site= sub(c('ABS00|ABS0'),'',Site_Precip_Temp_Elv$Site) 
 
   
@@ -24,6 +25,10 @@ VEG_COVER_Transects <- read_excel("Raw_data/Site_Data/ABS.MER.fielddata.Feb.2023
                                   sheet = "Transect.Level_Data")
 VEG_COVER_Transects$Site= sub(c('ABS00|ABS0'),'',VEG_COVER_Transects$Site)
 VEG_COVER_Transects$Transect= sub(c('T'),'',VEG_COVER_Transects$Transect)
+
+#nutrient data
+#Nutrient_Transect<- read_excel('Processed_data/Nutrients_Transect_level.xlsx')
+
 
 
 #import Blast ID df and clean data
@@ -42,6 +47,7 @@ Blast_ID<-Blast_ID%>%
   rename(Transect=transect)%>%
   left_join(VEG_COVER_Transects)%>%
   left_join(Site_Precip_Temp_Elv)%>%
+ # left_join(Nutrient_Transect)%>%
   select(-`Fire 3`,-`Interval (yrs)...16`,-`FESM severity category`)
 
 summary(Blast_ID)#no na;s in df
@@ -90,8 +96,8 @@ Blast_ID%>%
   left_join( temp %>% rename( sample_ID=Site))%>% 
   #filter(Site %in% c( 50:63))%>%
   ggplot(aes(x=Sample, y=Species, colour=as.factor(Transect), group=sample_ID)) + 
-  geom_line() + 
-  facet_wrap(~as.numeric(Site))
+   geom_line() #+ 
+  # facet_wrap(~as.numeric(Site))
 
 
 
@@ -107,13 +113,18 @@ sort(rowSums(mat))[1:63]
 # dim(matr)
 
 
+
 # prepare our data for betadiversity analyses:
 # 1 - focus analysis on ectomycorrhizal fungal taxa (create vector of OTU ids)
 # 2 - join the community table with our metadata table (need to also modify the community table so that it can be joined)
-ecm_otus <- filter(tax, guild=='ectomycorrhizal')$SH_ID
+#ecm_otus <- filter(tax, guild=='ectomycorrhizal')$SH_ID
+myco_otus <- filter(tax, guild%in% c("ectomycorrhizal","arbuscular_mycorrhizal"))$SH_ID
+
+ecm_otus <- filter(tax, guild%in% c("ectomycorrhizal"))$SH_ID
+
 dat_ecm <- left_join(Blast_ID,  mat %>% 
                        as.data.frame() %>% 
-                       dplyr::select(ecm_otus) %>% # just ecto OTUs
+                       dplyr::select(all_of(myco_otus)) %>% # just ecto OTUs
                        rownames_to_column('sample_ID'))
 
 
@@ -223,18 +234,28 @@ dat_ecm<-dat_ecm[-rows_zero_na,]
 #this is to look at all 60 sites
 
 
-adonis2(mat_ecm ~ Severity+Interval, data=dat_ecm, distance='robust.aitchison', add=TRUE)
+adonis2(mat_ecm ~ Severity+Interval+ Veg_Class , data=dat_ecm, distance='robust.aitchison', add=TRUE)
 
 table(dat_ecm$Interval)
 
+dat_ecm_otu<-dat_ecm%>%
+  select(ends_with('.09FU'))
+
+cap.all <- capscale(dat_ecm_otu~ Interval+Severity +
+                      Veg_Class
+                     # Condition (Site)
+                    , data=dat_ecm, distance='robust.aitchison', add=TRUE)
+anova(cap.all, by = "margin")
+
+
+
 
 # a constrained analysis of principal coordinates using a different distance index - result is quite good
-cap1 <- capscale(mat_ecm ~ Interval+Severity +
-                   # Shrub.Cover_50.200cm_perc + Tree.Basal.Area_m2 #I removed these variables because of the ordistep on line 246 removed them
-                 Site
+cap1 <- capscale(mat_ecm ~ Interval+Severity# +   Condition(Site)
                  , data=dat_ecm, distance='robust.aitchison', add=TRUE)
 Cap1_aov<-as.data.frame( anova(cap1, by = "margin"))%>%
   rownames_to_column()
+Cap1_aov
 #write_xlsx(Cap1_aov,'Processed_Data/CAP_60_Sites_AOV.xlsx')
 plot(cap1)
 cap1 # summary of inertia
@@ -338,7 +359,7 @@ anova(cap.sp)
 # which individual spatial variables to include?
 cap.0 <- capscale(mat_ecm ~ 1, data=temp) # intercept-only, starting analysis
 # uncomment this next line to run - takes a long time
-ordistep(cap.0, formula(cap.sp), direction='forward')
+#ordistep(cap.0, formula(cap.sp), direction='forward')
 
 
 # should we include all climate variables in our analysis
@@ -349,13 +370,13 @@ vif.cca(cap.cl)
 # variation partitioning - here to three groups of variables
 vp <- varpart(vegdist(mat_ecm, distance='robust.aitchison'), 
               ~ Interval+Severity, # Influence of Fire Regime = X1
-              #~ Shrub.Cover_50.200cm_perc + Tree.Basal.Area_m2 , #Vegetation
-              #~ Annual_Prec + elev , # climate = X2
-             # ~ PCNM2, # spatial = X3 (I selected this variable from the ordistep() lines 334:337)
+              ~ Shrub.Cover_50.200cm_perc + Tree.Basal.Area_m2 , #Vegetation
+              ~ Annual_Prec + elev , # climate = X2
+           #  ~ PCNM2, # spatial = X3 (I selected this variable from the ordistep() lines 334:337)
               ~ Site #4 effect of site
               , data=temp)
 vp
-plot(vp, Xnames=c('Regime','Site'))
+plot(vp, Xnames=c('Regime','Veg','Enviroment','Site'))
 
 # test unique variation explained by partitions using partial CAPs
 # 1 - associated with Regime (not interacting)

@@ -9,14 +9,16 @@ library(tibble)
 library(readxl)
 library(ggplot2)
 library(ggrepel)
+library(stringr)
 
-#All meta data from 60 sites
+#All meta data from 30 sites
 Site_Precip_Temp_Elv <- read_excel("Processed_data/Site_Precip_Temp_Elv.xlsx")%>%
+  rename(elev=wc2.1_30s_elev)%>%
   select(site,Annual_Temp,Annual_Prec,elev)%>%
   rename(Site=site)
 Site_Precip_Temp_Elv$Site= sub(c('ABS00|ABS0'),'',Site_Precip_Temp_Elv$Site) 
 
-Bag_Site<-read_excel('Processed_data/All_Bag_Site_Info.xlsx')
+Bag_Site<-read.csv('Processed_data/All_Bag_Site_Info.csv')
 
 
 #Nute and Veg data
@@ -189,7 +191,8 @@ swatch(custom_palette)
 p<-dat_ecm_30_site%>% select(ends_with('.09FU'))%>% 
   pivot_longer(cols=ends_with('.09FU'), names_to='SH_ID', 
                values_to='count')%>%left_join(tax)%>%
-  summarise(sum(count))
+  summarise(sum(count))%>%
+  pull()
 
 p
 
@@ -260,10 +263,19 @@ adonis2(mat_ecm ~ Severity+Interval, data=dat_ecm_30_site, distance='robust.aitc
 table(dat_ecm_30_site$Interval)
 
 
+
+cap.all <- capscale(mat_ecm~ Interval+Severity +
+                      Tree.Basal.Area_m2 + Herb.Cover_0.50cm_perc +
+                      NH4 + NO3 + Total.P 
+                    , data=dat_ecm_30_site, distance='robust.aitchison', add=TRUE)
+anova(cap.all, by = "margin")
+
+
+
 # a constrained analysis of principal coordinates using a different distance index - result is quite good
 cap1 <- capscale(mat_ecm ~ Interval+Severity +
               NH4 + NO3 + Total.P  
-               + Tree.Basal.Area_m2
+               #+ Tree.Basal.Area_m2
                  , data=dat_ecm_30_site, distance='robust.aitchison', add=TRUE)
 Cap1_aov<-as.data.frame( anova(cap1, by = "margin"))%>%
   rownames_to_column()
@@ -307,7 +319,7 @@ scrs_cent$label <- c("Interval (Long)", "Interval (Short)", "Severity (High)", "
 
 
 # first plot - site scores along with centroids for each group
-p2<-cbind(dat_ecm_30_site%>%left_join(Bag_Site %>% 
+p2<-cbind(dat_ecm_30_site%>%mutate(Site=as.numeric(Site),Transect=as.numeric(Transect))%>%left_join(Bag_Site %>% 
         select(Site,Transect, Site_Pair)%>% unique(), by = c("Site","Transect"))
           , scrs_site) %>% 
   ggplot(aes(x=CAP1, y=CAP2)) + 

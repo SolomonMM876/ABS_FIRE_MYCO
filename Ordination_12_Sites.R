@@ -13,9 +13,9 @@ library(ggplot2)
 
 
 #All meta data from 12 sites with bags collected
-Bag_Site<-read_excel('Processed_data/All_Bag_Site_Info.xlsx')
+Bag_Site<-read.csv('Processed_data/All_Bag_Site_Info.csv')
 
-Nutrients_Transects<-read_excel('Processed_data/Nutrients_Transect_level.xlsx')
+Nutrients_Transects<-read_excel('Processed_data/Nutrients_Transect_level.xlsx', col_types = 'numeric')
 VEG_COVER_Transects <- read_excel("Raw_data/Site_Data/ABS.MER.fielddata.Feb.2023_R.PROCESSED.VEG.COVER_ALL.xlsx", 
     sheet = "Transect.Level_Data")
 VEG_COVER_Transects$Site= sub(c('ABS00|ABS0'),'',VEG_COVER_Transects$Site)
@@ -32,17 +32,19 @@ Blast_ID$sample_ID<-sub(c("-"),".",Blast_ID$sample_ID)
 Blast_ID$sample_ID<-sub(c("-"),".",Blast_ID$sample_ID)
 names(Blast_ID)[9]<-'Veg_Class_Abv'
 
-Bag_Site<-read_excel('Processed_data/All_Bag_Site_Info.xlsx')
-
 
 Blast_ID<-Blast_ID%>%
-  dplyr::mutate(Regime = paste(Interval, Severity, sep = "_"))%>%
+  dplyr::mutate(Regime = paste(Interval, Severity, sep = "_"),
+                Site=as.numeric(Site),
+                transect=as.numeric(transect))%>%
   rename(Transect=transect)%>%
   #add the pairs of thee site into the df
   left_join(Bag_Site %>% select(Site,Transect, Site_Pair)%>% unique(), by = c("Site","Transect"))%>%
-  left_join(VEG_COVER_Transects)%>%
+  left_join(VEG_COVER_Transects%>%
+              mutate(Site=as.numeric(Site), Transect=as.numeric(Transect)))%>%
   left_join(Nutrients_Transects)%>%
   select(-`Fire 3`,-`Interval (yrs)...16`,-`FESM severity category`)
+
 
 
 #funguild output

@@ -46,7 +46,9 @@ bag_data <- bag_data %>%
   filter(Tube_ID!= 84)
 #Samples 29-1-33 and samples 56-1-16 had both bags damaged so there was no biomass collected from these samples
 
-#How should I do this for the Resin_Nutrient.R script???????
+library(writexl)
+write.csv(bag_data, file='Processed_data/bag_data.csv')
+
 
 # Merge bag and mycorrhizal data by Tube_ID
 bag_myc <- left_join(bag_data, myc_data, by = 'Tube_ID') %>%
@@ -55,7 +57,7 @@ bag_myc <- left_join(bag_data, myc_data, by = 'Tube_ID') %>%
   ungroup()
 
 # Read second round weight data for DNA and CNP measurements, excluding "total" column
-Myc_2nd_round_weight <- read_excel("Raw_data/DW_subsample_DNA_CNP.xlsx", 
+Myc_2nd_round_weight <- read_excel("Raw_data/Stoich/DW_subsample_DNA_CNP.xlsx", 
                                    sheet = "Sheet2")[, -2]  %>%
   mutate(Tube_ID = as.factor(Tube_ID))
 
@@ -96,12 +98,13 @@ corrected_myc<-left_join(dat_temp,bag_avg_undamaged)%>%
 
 #Site info data
 Site_Info <- read_excel("Raw_data/Site_Data/Site.Info.xlsx") %>%
-  select('1st_Soil_Sample', Bag_Install, Site, Pair) %>%
+  select('1st_Soil_Sample', Bag_Install, Site, Pair, Latitude,Longitude) %>%
   mutate(Site = gsub('ABS00|ABS0', "", Site)) %>%
   distinct() %>%
   group_by(Pair) %>%
   mutate(Site_Pair = paste(sort(unique(Site)), collapse = "-")) %>%
   ungroup()
+
 
 # Merge all site data into one final dataset
 site_data <- left_join(bag_data%>%select(Site,Transect,Location,harvest_date), Site_Info)%>%
@@ -196,6 +199,6 @@ Bag_Site %>%
   geom_boxplot(aes(x = as.factor(Site), y = myc_2nd_w_est_yield, fill = Transect))
 
 
-library(writexl)
-write_xlsx(Bag_Site, path='Processed_data/All_Bag_Site_Info.xlsx')
+
+write.csv(Bag_Site, file='Processed_data/All_Bag_Site_Info.csv',row.names = FALSE)
 

@@ -6,9 +6,16 @@ library(ggplot2)
 library(readxl)
 library(tidyr)
 
-Bag_Site_notes<-read_excel('Processed_data/All_Bag_Site_Info.xlsx')%>%
-  select(Site:mass_loss,-harvest_date)
-
+Bag_Site_notes<-read.csv('Processed_data/bag_data.csv')
+Bag_Site_notes <- Bag_Site_notes %>%
+  mutate(
+    Location = as.factor(Location),
+    Tube_ID = as.factor(Tube_ID),
+    Site = as.factor(Site),
+    Transect = as.factor(Transect),
+    Res_nute_sub_w = as.numeric(Res_remain_w),
+    Res_remain_w = as.numeric(Res_remain_w)
+  )
 
 #Ammonia and Nitrate data
 NH4NO3_RESIN_LOT_1 <- read_csv("Raw_data/Nutes/24-07-10 SOLOMON NH4NO3 HCL RESIN LOT 1_edit.txt")
@@ -60,10 +67,10 @@ NO3_NH4_Resin<-bind_rows(NH4NO3_RESIN_LOT_1,NH4NO3_RESIN_LOT_2)[,-c(10:13)] %>%
     # Blank_avg_Ammon = mean(Ammonia[grepl("CTRL", Site)], na.rm = TRUE),
     # Ammon_blanked = (Ammonia-Blank_avg_Ammon),
     Ammonia= ifelse(Ammonia < 0, LOQ_NH4NO3/2, Ammonia),#replace negative values with lowest possible/2
-    Ammonia_mg_kg= Ammonia *(7.5/Nutrient_sub),
+    Ammonia_mg_kg= Ammonia *(7.5/Res_remain_w),
     #Nitrate_blanked = (Nitrate-Blank_avg_Nitrate),
     Nitrate = ifelse(Nitrate < 0, LOQ_NH4NO3/2, Nitrate), #replace negative values with lowest possible/2
-    Nitrate_mg_kg= Nitrate*(7.5/Nutrient_sub))#7.5mL used for nutrient subset
+    Nitrate_mg_kg= Nitrate*(7.5/Res_remain_w))#7.5mL used for nutrient subset
 
 #rm(NH4NO3_RESIN_LOT_1,NH4NO3_RESIN_LOT_2)
 
@@ -135,7 +142,7 @@ Ortho_P_Resin<-bind_rows(OPHOS_RESIN_HCL_LOT_1,OPHOS_RESIN_HCL_LOT_2) %>%
   mutate(Blank_avg = mean(Result[grepl("CTRL", Site)], na.rm = TRUE), 
          Ortho_blanked = (Result-Blank_avg),
          Ortho_blanked = ifelse(Ortho_blanked < 0, 0.0288/2, Ortho_blanked),
-         Ortho_P_mg_kg= Ortho_blanked *(7.5/Nutrient_sub)/(`Manual Dil`))#7.5mL used for 1 g of resin
+         Ortho_P_mg_kg= Ortho_blanked *(7.5/Res_remain_w)/(`Manual Dil`))#7.5mL used for 1 g of resin
 
 
 
@@ -166,5 +173,5 @@ Nutrient_Resins<-inner_join(NO3_NH4_Resin%>%
                 select(Site,Transect,Location, Ortho_P_mg_kg,Tube_ID))
 
 library(writexl)
-write_xlsx(Nutrient_Resins, path='Processed_data/Resin_Nutrients.xlsx')
+write.csv(Nutrient_Resins, 'Processed_data/Resin_Nutrients.csv')
             
