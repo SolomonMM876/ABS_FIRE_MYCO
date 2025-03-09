@@ -23,6 +23,20 @@ Fresh_Bag_weights<-Fresh_Bag_weights%>%
          std_err_vol= sd(Volume, na.rm = TRUE) / sqrt(n()),
          percentage_error_weight = (std_err_weight / mean_weight) * 100,
          percentage_error_vol = (std_err_vol / mean_vol) * 100)
+#moisture_content
+ Fresh_Bag_weights %>%
+  group_by(Condition) %>%
+  summarize(mean_weight = mean(mean_weight, na.rm = TRUE),) %>%
+  pivot_wider(names_from = Condition, values_from = mean_weight) %>%
+  mutate(moisture_content = ((Normal - Dry) / Dry) * 100) %>%
+  pull(moisture_content)
+
+moisture_content <- Fresh_Bag_weights %>%
+  group_by(Condition) %>%
+  summarize(mean_weight = mean(mean_weight, na.rm = TRUE),) %>%
+  pivot_wider(names_from = Condition, values_from = mean_weight) %>%
+  mutate(moisture_content = ((Normal - Dry) / Dry) * 100) %>%
+  pull(moisture_content)
 
 
 Fresh_Bag_weights%>%

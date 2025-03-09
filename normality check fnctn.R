@@ -47,11 +47,11 @@ check_normality <- function(data, metric) {
 }
 
 
+#metrics
+metrics <- c('Shannon', 'Simpson', 'Chao1', 'Observed', 'Pielou')
 
-alpha_metrics <- c("Shannon", "Simpson", "InvSimpson", "Observed")
-
-for (metric in alpha_metrics) {
-  check_normality(alpha_meta_Site, metric)
+for (metric in metrics) {
+  check_normality(alpha_myco_Site_Tran, metric)#Change df here
 }
 
 

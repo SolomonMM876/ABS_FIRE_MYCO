@@ -10,19 +10,27 @@ library(dplyr)
 
 Bag_data<-read.csv('Processed_data/All_Bag_data.csv')
 
-# Bag_data[13,]$ra_sap
-# Bag_data<-Bag_data[-13,]
+
+
+#log transform response variables
+Bag_data<-Bag_data%>%
+  mutate(Ortho_P_mg_kg_log=log10(Ortho_P_mg_kg),
+         Nitrate_mg_kg_log=log10(Nitrate_mg_kg),
+         Ammonia_mg_kg_log=log10(Ammonia_mg_kg),
+         pH_log=log10(pH))
+
 
 
 #Resins related to biomass
 
+m_biomass_day_resins<-lmer(log10_biomass_day~Fire.Severity+Fire.Interval +
+                                 Ortho_P_mg_kg+ Nitrate_mg_kg+ Ammonia_mg_kg + pH+ #soil prop
+                                 perc_myco_host_freq+
+                                 (1|Site/Transect) 
+                               ,data=Bag_data)
 
-m_biomass_day_resins<-lmer(log10_biomass_day~  
-                             Ortho_P_mg_kg+ Nitrate_mg_kg+ Ammonia_mg_kg+
-                             pH+
-                             fire.frequency + Fire.Severity+ (1|Site/Transect) , 
-                       data=Bag_data)
 
+#anova(m_biomass_day_resins_freq,m_biomass_day_resins_tot)
 
 summary(m_biomass_day_resins)
 Anova_resin<-round(Anova(m_biomass_day_resins,test='F'), 2) 
@@ -31,20 +39,48 @@ plot(m_biomass_day_resins)
 qqPlot(resid(m_biomass_day_resins))
 r2(m_biomass_day_resins)
 emm_biomass_Interval<-as.data.frame(emmeans(m_biomass_day_resins,
-                                          ~fire.frequency))
-emm_biomass_Severity<-as.data.frame(emmeans(m_biomass_day_resins,
-                                            ~Fire.Severity))
+                                          ~Fire.Interval))
+emm_biomass_Ortho<-as.data.frame(emmeans(m_biomass_day_resins,
+                                            ~Ortho_P_mg_kg))
+emm_Interval<-as.data.frame(emmeans(m3, ~Fire.Interval))
+emm_Interval <- emm_Interval %>%
+  mutate(
+    emmean_bt = 10^emmean,
+    lower.CL_bt = 10^lower.CL,
+    upper.CL_bt = 10^upper.CL
+  )
+
+
+
+#Resins related to biomass
+
+m_biomass_day_nutri<-lmer(log10_biomass_day~Ortho_P_mg_kg+ Nitrate_mg_kg+ Ammonia_mg_kg + pH+ #soil prop
+                             (1|Site/Transect) 
+                           ,data=Bag_data)
+
+
+#anova(m_biomass_day_resins_freq,m_biomass_day_resins_tot)
+
+summary(m_biomass_day_nutri)
+Anova_resin<-round(Anova(m_biomass_day_nutri,test='F'), 2) 
+Anova_resin
+plot(m_biomass_day_nutri)
+qqPlot(resid(m_biomass_day_nutri))
+r2(m_biomass_day_nutri)
+emm_biomass_Interval<-as.data.frame(emmeans(m_biomass_day_nutri,
+                                            ~Fire.Interval))
+
 
 #Ortho P and Biomass
 library(ggeffects)
-predict_response(m_biomass_day_resins,terms= c('Ortho_P_mg_kg'), back_transform = FALSE)%>%
+predict_response(emm_biomass_Ortho,terms= c('Ortho_P_mg_kg'), back_transform = FALSE)%>%
   mutate(Biomass_day= (10^(predicted)*(1e+06/15)),
          confidence.low= (10^(conf.low)*(1e+06/15)),
          confidence.high = (10^(conf.high)*(1e+06/15)))%>%
 ggplot(aes(x, Biomass_day)) +
   geom_line(color = "black", linewidth=2) +
   geom_ribbon(aes(ymin =confidence.low , ymax = confidence.high), alpha = 0.1)+
-  geom_point(data=Bag_data, mapping=aes(x=Ortho_P_mg_kg, y=(10^(log10_biomass_day)*(1e+06/15))),
+  geom_point(data=Bag_data, mapping=aes(x=myco_host_total, y=(10^(lbiomass_day)*(1e+06/15))),
              inherit_aes=FALSE, size=3)+
   labs(
     x = expression(paste(PO[4], " (mg/kg)")),
@@ -64,24 +100,7 @@ ggplot(aes(x, Biomass_day)) +
 
 min(Bag_data$Biomass_day)*(1e+06/15)
 
-#Fire interval and biomass
-
-p<-ggplot(emm_biomass_Interval, aes(x = fire.frequency, y = (10^(emmean)*(1e+06/15))) )+
-  geom_point(data=Bag_data, aes(x=fire.frequency, y=(Biomass_day)*(1e+06/15)), size=3, alpha=.6)+ 
-  labs(x = "Fire Interval", y = "Hyphal Production (g/ha/day)") +
- 
-  annotate("text", x = 1.9, y = Inf, label = paste0("Interval (p) = ", Anova_resin["fire.frequency", "Pr(>F)"]),
-           hjust = 2.5, vjust = 1.5, size = 12)+
-  theme_classic()+
-  theme(axis.text.x = element_text( hjust = 0.5, size = 25, face = "bold"),
-        axis.text.y = element_text(size = 23, face = "bold"),
-        axis.title.x = element_text(size = 30, face = "bold"),
-        axis.title.y = element_text(size = 27, face = "bold"),
-        axis.line = element_line(size = 1.5),
-        legend.position = 'none')
-
-p
-
+Fire interval and biomass
 emm_biomass_Interval%>%
   summarise(emmeans_avg= mean(emmean))%>%
   mutate(emmeans_biomass_g_ha_day= (10^emmeans_avg)*(1e+06/15))
@@ -97,17 +116,19 @@ emm_biomass_Interval%>%
 #   facet_grid(~Fire.Severity,scales = "free_x")
 
 severity_colors <- c("High" = "darkolivegreen", "Low" = "cornflowerblue")
+interval_colors <- c("Long" = "darkred", "Short" = "orange")
 
 
-p<-ggplot(emm_biomass_Severity, aes(x = Fire.Severity, y = (10^(emmean)*(1e+06/15))) )+
-  geom_col(aes(fill=Fire.Severity),size=4, width = .7) +
+p<-ggplot(emm_biomass_Interval, aes(x = Fire.Interval, y = (10^(emmean)*(1e+06/15))) )+
+  geom_col(aes(fill=Fire.Interval),size=4, width = .7) +
+  geom_point(data=Bag_data, aes(x=Fire.Interval, y=(Biomass_day)*(1e+06/15)), size=3, alpha=.6)+
   geom_errorbar(aes(ymin = ((10^lower.CL)*(1e+06/15)),
                     ymax = ((10^upper.CL)*(1e+06/15)), width = 0.2 ),
                 width= .4, size= 1.5) +
-  labs(x = "Fire Severity", y = "Hyphal Production (g/ha/day)") +
-  scale_fill_manual(values = severity_colors) +     # Custom colors for Interval
-  scale_y_continuous(breaks = seq(0, 600, by = 100)) +
-  annotate("text", x = 1.9, y = Inf, label = paste0("Severity (p) = ", Anova_resin["Fire.Severity", "Pr(>F)"]),
+  labs(x = "Fire Frequency", y = "Hyphal Production (g/ha/day)") +
+  scale_fill_manual(values = interval_colors) +     # Custom colors for Interval
+  scale_y_continuous(breaks = seq(0, 2300, by = 250)) +
+  annotate("text", x = 1.6, y = Inf, label = paste0("Severity (p) = ", Anova_resin["Fire.Interval", "Pr(>F)"]),
            hjust = 2.5, vjust = 1.5, size = 12)+
   theme_classic()+
   theme(axis.text.x = element_text( hjust = 0.5, size = 25, face = "bold"),
@@ -121,9 +142,12 @@ p<-ggplot(emm_biomass_Severity, aes(x = Fire.Severity, y = (10^(emmean)*(1e+06/1
 p
 
 
-
 #Orthophosphate
-m1<-lmer(log10(Ortho_P_mg_kg)~Fire.Severity+ Fire.Interval +pH+ (1|Site/Transect) , data=Bag_data)
+m1<-lmer(log10(Ortho_P_mg_kg)~Fire.Severity+ Fire.Interval + (1|Site/Transect) , data=Bag_data)
+
+#m1<-lmer((Ortho_P_mg_kg_log)~Fire.Severity+ Fire.Interval + Nitrate_mg_kg+ Ammonia_mg_kg + pH+ (1|Site/Transect) , data=Bag_data)
+
+
 
 #1
 summary(m1)
@@ -141,7 +165,10 @@ r2(m1)
 
 
 #Nitrate
-m2<-lmer(log10(Nitrate_mg_kg)~  Fire.Severity+ Fire.Interval + pH+ (1|Site/Transect) , data=Bag_data)
+m2<-lmer(log10(Nitrate_mg_kg)~  Fire.Severity+ Fire.Interval +(1|Site/Transect) , data=Bag_data)
+
+
+#m2<-lmer((Nitrate_mg_kg_log)~Fire.Severity+ Fire.Interval + Ortho_P_mg_kg + Ammonia_mg_kg + pH+ (1|Site/Transect) , data=Bag_data)
 
 
 #1
@@ -170,14 +197,18 @@ emmip(m2, ~Fire.Interval)
 
 
 #Ammonia
-m3<-lmer(log10(Ammonia_mg_kg) ~   Fire.Interval + Fire.Severity + pH+ (1|Site) , data=Bag_data)
+m3<-lmer(log10(Ammonia_mg_kg) ~   Fire.Interval + Fire.Severity + (1|Site/Transect) , data=Bag_data)
+
+
+#m3<-lmer((Ammonia_mg_kg_log)~Fire.Severity+ Fire.Interval + Ortho_P_mg_kg + Nitrate_mg_kg + pH+ (1|Site/Transect) , data=Bag_data)
+
 #3 (NH4~Regime) Not Sig
 summary(m3)
 Anova(m3,test='F')
 plot(m3)
 qqPlot(resid(m3))
 r2(m3)
-emm_Interval<-as.data.frame(emmeans(m2, ~Fire.Interval))
+emm_Interval<-as.data.frame(emmeans(m3, ~Fire.Interval))
 emm_Interval <- emm_Interval %>%
   mutate(
     emmean_bt = 10^emmean,
@@ -186,8 +217,12 @@ emm_Interval <- emm_Interval %>%
   )
 
 
+#host identity
+m4<-lmer(perc_myco_host_freq~   Fire.Interval  + Fire.Severity+ (1|Site) , data=Bag_data)
 
-m4<-lmer(NO3~   Fire.Interval  + Fire.Severity+ (1|Site) , data=Bag_data)
+
+
+
 m5<-lmer(NO3~   log10_myc_2nd_w_est_yield + (1|Site) , data=Bag_data)
 m6<-lmer(NH4~   log10_myc_2nd_w_est_yield + (1|Site) , data=Bag_data)
 m7<-lmer(Bray.P~   log10_myc_2nd_w_est_yield + (1|Site) , data=Bag_data)
@@ -199,12 +234,11 @@ hist(log10(Bag_data$Ortho_P_mg_kg))
 
 
 
-#4 (NO3~Regime) 
-#Severity almost sig t= -2.117, p= .06334
-#Interval trend t= -1.807, p= .1042
-#High Long - Low Short   df=8.02   t.ratio=2.824  p= 0.0850
+#4 (Host~Regime
+
 summary(m4)
-NO3_Anova<-Anova(m4,test='F')
+Anova<-Anova(m4,test='F')
+Anova
 plot(m4)
 qqPlot(resid(m4))
 pairs(emmeans(m4, ~ Fire.Severity+ Fire.Interval))

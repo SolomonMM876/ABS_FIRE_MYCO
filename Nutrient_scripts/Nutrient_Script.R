@@ -39,13 +39,10 @@ Bray_P$Site<-as.factor(as.numeric(Bray_P$Site))
 Bray_P$Bray.P<-as.numeric(Bray_P$Bray.P)
 Bray_P<-Bray_P %>%drop_na(Site)
 
-#twice as many sites for site 60
-which(Bray_P$Site==60)
-
 
 #merge tech replicates
 Mean.Bray<-Bray_P%>%group_by(Site,Transect)%>%
-  filter(Bray.P>=0)%>%
+  mutate(Bray.P = ifelse(Bray.P<0, 0.05, Bray.P))%>%
   summarise(Bray.P=mean(Bray.P))
 
 Bray_P.Site<-left_join(Mean.Bray,Site_Info, by = join_by(Site,Transect))
@@ -133,11 +130,6 @@ colnames(NH4)[6]<-'NH4'
 NO3<-New.NH4NO3[New.NH4NO3$Test.Name =="Nitrate 2",]
 colnames(NO3)[6]<-'NO3'
 
-#removal of extreme outliers
-NO3.adj<- NO3[!(NO3$Site == 58 & NO3$Transect == 1), ]
-NO3.adj<- NO3.adj[!(NO3.adj$Site == 39 & NO3.adj$Transect == 1), ]
-
-
 #merge tech replicates
 Mean_NH4<-NH4%>%group_by(Site, Transect)%>%
   summarise(NH4=mean(NH4))
@@ -150,8 +142,9 @@ NH4.Site<-left_join(Mean_NH4,Site_Info, by = join_by(Site,Transect))
 NH4_All<-left_join(NH4,Site_Info, by = join_by(Site,Transect))
 
 #merge tech replicates
-Mean_NO3<-NO3.adj%>%group_by(Site,Transect)%>%
+Mean_NO3<-NO3%>%group_by(Site,Transect)%>%
   summarise(NO3=mean(NO3))
+
 
 All.Mean.NO3<-left_join(Site_Info,Mean_NO3, by = join_by(Site,Transect))
 
@@ -238,10 +231,9 @@ Mean.T.P<-Total_P%>%group_by(Site,Transect)%>%
   mutate(Total.P=mean(Total.P))%>%
   select(Total.P,Site,Transect)
 
-#multiple transects 1 and 2 for site 60 therefore remove those sites
-which(Mean.T.P$Site==60)
-
-Mean.T.P<-Mean.T.P[-c(58:61),]
+Mean.T.P<-Mean.T.P%>%
+  group_by(Site,Transect)%>%
+  summarise(Total.P=mean(Total.P))
 
 
 All.Mean.Total.P<-left_join(Site_Info,Mean.T.P, by = join_by(Site,Transect))

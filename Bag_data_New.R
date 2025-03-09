@@ -26,7 +26,15 @@ bag_data <- bag_data %>%
     Res_nute_sub_w = as.numeric(Nutrient_sub),
     Res_remain_w = as.numeric(Bead_weight)
   )
-
+#calc average recovery of bags
+ bag_data %>%
+  mutate(total_resin_w = rowSums(across(c(Res_nute_sub_w, Res_remain_w)), na.rm = TRUE)) %>%
+  summarise(
+    mean_total_resin_w = mean(total_resin_w, na.rm = TRUE),
+    se_total_resin_w = sd(total_resin_w, na.rm = TRUE) / sqrt(n()),
+    range_total_resin_w = range(total_resin_w, na.rm = TRUE),)
+  
+  
 # Consolidate replicate A and B samples at each location into one unit
 bag_data <- bag_data %>%
   group_by(Tube_ID,Site,Transect,Location) %>%
@@ -71,9 +79,9 @@ dat_temp<-bag_myc%>%group_by(Site,Transect,Location) %>%
             myc_2nd_w=sum(myc_2nd_w),
             Res_remain_w=sum(Res_remain_w))
 
-
 #this is calculated from average bag weight of undeployed bags in bag_weight_vol.R
 initial_bag_w<-15.1257*2
+dry_bag_w= 7.088*2
 #this has to be the same as Site 29 T1 and added for S29 T2
 undamaged_bag_weight_Site_29<- 27.6
   
@@ -94,6 +102,35 @@ corrected_myc<-left_join(dat_temp,bag_avg_undamaged)%>%
   mutate(resin_mass_est = (initial_bag_w * Res_total_Location) / mean_undam_resin_w,
          myc_2nd_w_per_bead= (myc_2nd_w / resin_mass_est),
          myc_2nd_w_est_yield= myc_2nd_w_per_bead*initial_bag_w)
+
+# moisture_content<-left_join(dat_temp,bag_avg_undamaged)%>%
+#   mutate(moist_P=(mean_undam_resin_w-dry_bag_w)/dry_bag_w)%>%
+#   ungroup()%>%
+#   summarise(
+#     mean_moist_P = mean(moist_P, na.rm = TRUE)*100,
+#     se_moist_P = sd(moist_P, na.rm = TRUE)*100 / sqrt(n())
+#   )
+# 
+# 
+# moisture_content
+
+#second thoughts
+corrected_myc<-left_join(dat_temp,bag_avg_undamaged)%>%
+  mutate(myc_w_per_bead= (myc_2nd_w / Res_remain_w), #hyph per resin harvested
+         hypo_bag= initial_bag_w/(initial_bag_w/mean_undam_resin_w),# this accounts for the change in water weight from when we installed to harvested based on average undamaged bags
+           # this is what a hypothetical bag should have weighed
+         myc_2nd_w_est_yield= hypo_bag*myc_w_per_bead) # here we multiply the amount of hyphae harvested per a resin by the amount of resins in a hypothetical bag
+
+
+
+
+
+
+
+
+
+
+
 
 
 #Site info data
@@ -117,7 +154,12 @@ site_data <- left_join(bag_data%>%select(Site,Transect,Location,harvest_date), S
   arrange(Site, Days_Installed)
 
 mean(site_data$Days_Installed)
-sd(site_data$Days_Installed)
+sd(site_data$Site)
+site_data %>%ungroup()%>%
+  summarise(
+    Days_Installed = mean(Days_Installed),
+    SE =sqrt(n())
+  )
 
 # Log transformations and biomass calculations
 Bag_Site <- left_join(corrected_myc,site_data) %>%
