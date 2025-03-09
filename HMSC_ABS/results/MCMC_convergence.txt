@@ -1,0 +1,51 @@
+MCMC Convergennce statistics
+
+
+HMSC_ABS/models/models_thin_10_samples_10_chains_2.Rdata
+
+
+presence-absence stoich model
+
+
+beta
+
+Min.   : 0.9356  
+1st Qu.: 1.1133  
+Median : 1.5040  
+Mean   : 1.9097  
+3rd Qu.: 2.3551  
+Max.   :11.2508  
+
+gamma
+
+Min.   :0.9377  
+1st Qu.:1.0038  
+Median :1.0872  
+Mean   :1.2107  
+3rd Qu.:1.2699  
+Max.   :4.0314  
+
+rho
+
+1.810857
+
+omega
+
+
+Transect
+
+Min.   :0.9357  
+1st Qu.:1.0506  
+Median :1.1509  
+Mean   :1.1607  
+3rd Qu.:1.2354  
+Max.   :1.8274  
+
+Site
+
+Min.   :0.9354  
+1st Qu.:1.0365  
+Median :1.1769  
+Mean   :1.1932  
+3rd Qu.:1.2897  
+Max.   :2.2072  
