@@ -58,8 +58,11 @@ myco_dat<-Guild_dat%>%
   left_join(Fun_Traits%>%rename(genus=GENUS)%>%
               select(genus,Ectomycorrhiza_exploration_type_template,Ectomycorrhiza_lineage_template))%>%
   rename(exploration_type=Ectomycorrhiza_exploration_type_template,
-         Ecm_lineage=Ectomycorrhiza_lineage_template)%>%
-  mutate(across(c(exploration_type,Ecm_lineage), ~replace_na(.x, "unknown")))# Replace NA with "Unknown" 
+         Ecm_lineage=Ectomycorrhiza_lineage_template)
+
+write.csv(myco_dat, 'Processed_data/Bag_Seq_myco_dat.csv', row.names = FALSE)
+
+
 
 #select taxa
 all_tax<-Guild_dat%>%
@@ -154,8 +157,9 @@ wide_myco<-myco_dat  %>%
 
 Bag_Seq_wide<-left_join(Bag_data%>%
                           select(Tube_ID,Fire.Interval,Fire.Severity,Site, Transect, Location,#Site Data
-                                 Ortho_P_mg_kg,Nitrate_mg_kg, Ammonia_mg_kg,#Nutrients from resin data
+                                 Ortho_P_mg_kg,Nitrate_mg_kg, Ammonia_mg_kg,pH,#Nutrients from resin data
                                  log10_biomass_day,perc_myco_host_freq, #biomass data
+                                 C_N,C_P,N_P,Carb_Hyph,Nitrog_Hyph,Phos_Hyph,
                                  Longitude,Latitude), #meta data
                         wide_myco)%>%
   mutate(across(starts_with('ITSall'), ~replace_na(., 0)))

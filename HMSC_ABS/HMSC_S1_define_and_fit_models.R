@@ -14,11 +14,16 @@ data = read.csv(file.path(dataDir, "Bag_data.csv"))
 
 PhyData=read.csv(file.path(dataDir,'Trait_Phylo_data.csv'))%>%
   mutate(across(everything(), as.factor))%>%
-  select(-exploration_type,-Ecm_lineage)
+  select(-exploration_type,-Ecm_lineage,-mean_gs)
 
 TrData=read.csv(file.path(dataDir,'Trait_Phylo_data.csv'))%>%
   mutate(across(everything(), as.factor))%>%
   select(OTU:last_col())
+
+#OTUs with both genome size and explo type
+temp<-TrData%>%filter(!is.na(exploration_type))%>%filter(!is.na(mean_gs))
+
+
 #order TrData and Y data the same
 otu_order <- TrData$OTU
 
@@ -106,7 +111,7 @@ XFormula = ~Fire.Severity + Fire.Interval + log(readcount)+
   Ortho_P_mg_kg+ Nitrate_mg_kg+ Ammonia_mg_kg+ pH #Soil Properties
 
 # CONSTRUCT TAXONOMICAL TREE TO BE USED AS PROXY FOR PHYLOGENETIC TREE
-taxonomicTree <- as.phylo(~phylum/class/order/family/genus/species/OTU, data = PhyData, collapse = FALSE)
+taxonomicTree <- as.phylo(~phylum/class/order/family/genus/OTU, data = PhyData, collapse = FALSE)
 taxonomicTree$edge.length = rep(1,length(taxonomicTree$edge))
 plot(taxonomicTree,cex=0.5) 
 

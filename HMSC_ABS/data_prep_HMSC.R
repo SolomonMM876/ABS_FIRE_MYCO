@@ -1,37 +1,26 @@
 library(readr)
-library(tidyr)
-library(dplyr)
+library(tidyverse)
 
-
-#combined bag data
-Bag_data<-read.csv('Processed_data/All_Bag_data.csv')%>%
-  mutate(Location_ID = paste0("S", Site, "T", Transect, "L", Location))
-#bag_data with tubeIDS
-Bag_Site_ID<-read.csv('Processed_data/All_Bag_Site_Info.csv')%>%
-  filter(!Tube_ID %in% c(8,11))#these tubes are both from site 29, but I mixed up the transects and 
-#it creates duplication errors when I keep samples in
-#I could include them in Site level analyses.
-
-Bag_data<-Bag_data%>%left_join(Bag_Site_ID, relationship = "many-to-many")
-rm(Bag_Site_ID)
 
 #read in community data
-Community<-read.csv('Processed_data/cleaned_seq_dat.csv')%>%
-  mutate(across(starts_with('ITSall'), ~replace_na(., 0)))%>%
-  filter(guild %in%c("Ectomycorrhizal","Arbuscular Mycorrhizal","Orchid Mycorrhizal","Ericoid Mycorrhizal"))
+myco_dat<-read.csv('Processed_data/Bag_Seq_myco_dat.csv')
 
-
+#read in community summary from jeff
 dat_summary <- read_tsv('Raw_data/Jeff_Prelim/SMM/ITS_output_summarised.tsv')%>%
-  left_join(Community%>%select(Tube_ID,barcode)%>%distinct())%>%filter(!is.na(Tube_ID))
+  left_join(myco_dat%>%select(Tube_ID,barcode)%>%distinct())%>%filter(!is.na(Tube_ID)) #Add Tube_ID
+
+#read in meta data with wide version of seq
+Bag_Seq_wide<-read.csv('Processed_data/Bag_Seq_wide.csv')
+
+
 
 # Data prep step
-data <- Community %>%
-  filter(!Tube_ID%in% c(8,11))%>% #these samples are excluded because they are same location, but different transects
+data <- myco_dat %>%
   group_by(Tube_ID, OTU) %>%
   #transform to wide format
   summarise(sequence_count = sum(count, na.rm = TRUE), .groups = 'drop') %>%
   pivot_wider(values_from = sequence_count, names_from = OTU,  values_fill = 0) %>%
-  left_join(Bag_data%>% 
+  left_join(Bag_Seq_wide%>% 
               distinct(Tube_ID,Site,Transect,Location,Fire.Interval, Fire.Severity,
                        log10_biomass_day,C_N,C_P,N_P,
                        Ortho_P_mg_kg,Nitrate_mg_kg,Ammonia_mg_kg,pH,
@@ -52,36 +41,24 @@ data <- Community %>%
          Ortho_P_mg_kg,Nitrate_mg_kg,Ammonia_mg_kg,pH,
          everything())#
 
-
-rm(dat_summary,Bag_data)
-
+rm(dat_summary)
 
 
-TrData<-Community %>%
-  filter(!Tube_ID%in% c(8,11))%>% #these samples are excluded because they are same location, but different transects
-  mutate(across(starts_with('ITSall'), ~replace_na(., 0)))%>%
-  filter(guild %in%c("Ectomycorrhizal","Arbuscular Mycorrhizal","Orchid Mycorrhizal","Ericoid Mycorrhizal"))%>%
-  select( kingdom:species,SH_species,OTU) %>% distinct()
-  
 library(readxl)
 Fun_Traits<-read_excel("Processed_data/Polme_etal_2021_FungalTraits.xlsx")
 
 #read in genome size taxa df
 tax_gs_bag<-read.csv('Processed_data/taxa_w_genome_size_bag_data.csv')
 # 
- TrData<-TrData%>%
+ TrData<-myco_dat%>%
    left_join(Fun_Traits, by = c('genus'='GENUS'))%>%
-   select(kingdom:OTU,Ectomycorrhiza_exploration_type_template,Ectomycorrhiza_lineage_template)%>%
+   select(OTU:genus,-count,-resampled_count,-resampled_date,Ectomycorrhiza_exploration_type_template,Ectomycorrhiza_lineage_template)%>%
    rename(exploration_type=Ectomycorrhiza_exploration_type_template,
           Ecm_lineage=Ectomycorrhiza_lineage_template)%>%
-   mutate(across(everything(), ~replace_na(.x, "unknown")))%>%# Replace NA with "Unknown" 
-   left_join(tax_gs_bag%>%select(genus,mean_gs)
-             %>%distinct())%>%mutate(mean_gs = ifelse(is.na(mean_gs), "unknown", mean_gs))
-   # I have to do this in order to make the phylo tree and run traits later, it is not a perfect solution, but it is the best I can think of
+      left_join(tax_gs_bag%>%select(genus,mean_gs)%>%distinct())%>%
+   distinct()
 
- 
- 
-rm(Community)
+
 
 
 write.csv(data, file='HMSC_ABS/data/Bag_data.csv',row.names=FALSE)
@@ -137,9 +114,9 @@ TrData_CNP<-TrData_CNP%>%
   select(kingdom:OTU,Ectomycorrhiza_exploration_type_template,Ectomycorrhiza_lineage_template)%>%
   rename(exploration_type=Ectomycorrhiza_exploration_type_template,
          Ecm_lineage=Ectomycorrhiza_lineage_template)%>%
-  mutate(across(everything(), ~replace_na(.x, "unknown")))%>%
+  filter(!is.na(exploration_type))%>%
   left_join(tax_gs_bag%>%select(genus,mean_gs)
-            %>%distinct())%>%mutate(mean_gs = ifelse(is.na(mean_gs), "unknown", mean_gs))
+            %>%distinct())%>%filter(!is.na(mean_gs))
 # I have to do this in order to make the phylo tree and run traits later, it is not a perfect solution, but it is the best I can think of
 
 

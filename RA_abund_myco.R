@@ -24,7 +24,7 @@ RA_model<-lmer(log_RA_total~ Fire.Severity+Fire.Interval +
                          perc_myco_host_freq+
                          (1|Site/Transect/Location),
                        data=dat_myco_RA)
-
+#this model takes the longest to run and doesnt have too bad of a fit, but still some drift at the end
 RA_model <- glmmTMB(
   RA_total_reads ~ Fire.Severity + Fire.Interval + 
     Nitrate_mg_kg + Ammonia_mg_kg + Ortho_P_mg_kg +
@@ -39,5 +39,5 @@ plot(sim_res)
 #plot(RA_model)
 qqPlot(resid(RA_model))
 summary(RA_model)
-Anova_resin<-round(Anova(RA_model,test='F'), 2) 
+Anova_resin<-round(Anova(RA_model), 2) 
 Anova_resin
