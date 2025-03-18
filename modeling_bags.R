@@ -42,13 +42,53 @@ emm_biomass_Interval<-as.data.frame(emmeans(m_biomass_day_resins,
                                           ~Fire.Interval))
 emm_biomass_Ortho<-as.data.frame(emmeans(m_biomass_day_resins,
                                             ~Ortho_P_mg_kg))
-emm_Interval<-as.data.frame(emmeans(m3, ~Fire.Interval))
-emm_Interval <- emm_Interval %>%
+emm_Interval <- emm_biomass_Interval %>%
   mutate(
     emmean_bt = 10^emmean,
     lower.CL_bt = 10^lower.CL,
     upper.CL_bt = 10^upper.CL
   )
+
+
+
+
+
+severity_colors <- c("High" = "darkolivegreen", "Low" = "cornflowerblue")
+interval_colors <- c("Long" = "darkred", "Short" = "orange")
+
+
+p<-ggplot(emm_biomass_Interval, aes(x = Fire.Interval, y = (10^(emmean)*(1e+06/15))) )+
+  geom_col(aes(fill=Fire.Interval),size=4, width = .7) +
+  geom_point(data=Bag_data, aes(x=Fire.Interval, y=(Biomass_day)*(1e+06/15)), size=3, alpha=.6)+
+  geom_errorbar(aes(ymin = ((10^lower.CL)*(1e+06/15)),
+                    ymax = ((10^upper.CL)*(1e+06/15)), width = 0.2 ),
+                width= .4, size= 1.5) +
+  labs(x = "Fire Frequency", y = "Hyphal Production (g/ha/day)") +
+  scale_fill_manual(values = interval_colors) +     # Custom colors for Interval
+  scale_y_continuous(breaks = seq(0, 2300, by = 250)) +
+  annotate("text", x =1.9, y = Inf, label = paste0("Fire Frequency (p) = ", Anova_resin["Fire.Interval", "Pr(>F)"]),
+           hjust = 2.5, vjust = 1.5, size = 11)+
+  theme_classic()+
+  theme(axis.text.x = element_text( hjust = 0.5, size = 25, face = "bold"),
+        axis.text.y = element_text(size = 23, face = "bold"),
+        axis.title.x = element_text(size = 30, face = "bold"),
+        axis.title.y = element_text(size = 27, face = "bold"),
+        axis.line = element_line(size = 1.5),
+        legend.position = 'none')
+
+
+p
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -67,40 +107,40 @@ Anova_resin
 plot(m_biomass_day_nutri)
 qqPlot(resid(m_biomass_day_nutri))
 r2(m_biomass_day_nutri)
-emm_biomass_Interval<-as.data.frame(emmeans(m_biomass_day_nutri,
-                                            ~Fire.Interval))
+# emm_biomass_Interval<-as.data.frame(emmeans(m_biomass_day_nutri,
+#                                             ~Fire.Interval))
 
 
 #Ortho P and Biomass
-library(ggeffects)
-predict_response(emm_biomass_Ortho,terms= c('Ortho_P_mg_kg'), back_transform = FALSE)%>%
-  mutate(Biomass_day= (10^(predicted)*(1e+06/15)),
-         confidence.low= (10^(conf.low)*(1e+06/15)),
-         confidence.high = (10^(conf.high)*(1e+06/15)))%>%
-ggplot(aes(x, Biomass_day)) +
-  geom_line(color = "black", linewidth=2) +
-  geom_ribbon(aes(ymin =confidence.low , ymax = confidence.high), alpha = 0.1)+
-  geom_point(data=Bag_data, mapping=aes(x=myco_host_total, y=(10^(lbiomass_day)*(1e+06/15))),
-             inherit_aes=FALSE, size=3)+
-  labs(
-    x = expression(paste(PO[4], " (mg/kg)")),
-    y = "Hyphal Production (g/ha/day)") +
-  annotate("text", x = 0, y = Inf, label = paste0("Avail Phos (p) = ", Anova_resin$`Pr(>F)`[1]),
-           hjust = .1, vjust = 1.1, size = 12)+
-  theme_minimal(base_size = 15) +  # Minimal theme with larger base text size
-  theme_classic()+
-  theme(axis.text.x = element_text( hjust = 0.5, size = 25, face = "bold"),
-        axis.text.y = element_text(size = 23, face = "bold"),
-        axis.title.x = element_text(size = 30, face = "bold"),
-        axis.title.y = element_text(size = 27, face = "bold"),
-        axis.line = element_line(size = 1.5),
-        legend.position = 'none')
-
+# library(ggeffects)
+# predict_response(emm_biomass_Ortho,terms= c('Ortho_P_mg_kg'), back_transform = FALSE)%>%
+#   mutate(Biomass_day= (10^(predicted)*(1e+06/15)),
+#          confidence.low= (10^(conf.low)*(1e+06/15)),
+#          confidence.high = (10^(conf.high)*(1e+06/15)))%>%
+# ggplot(aes(x, Biomass_day)) +
+#   geom_line(color = "black", linewidth=2) +
+#   geom_ribbon(aes(ymin =confidence.low , ymax = confidence.high), alpha = 0.1)+
+#   geom_point(data=Bag_data, mapping=aes(x=myco_host_total, y=(10^(lbiomass_day)*(1e+06/15))),
+#              inherit_aes=FALSE, size=3)+
+#   labs(
+#     x = expression(paste(PO[4], " (mg/kg)")),
+#     y = "Hyphal Production (g/ha/day)") +
+#   annotate("text", x = 0, y = Inf, label = paste0("Avail Phos (p) = ", Anova_resin$`Pr(>F)`[1]),
+#            hjust = .1, vjust = 1.1, size = 12)+
+#   theme_minimal(base_size = 15) +  # Minimal theme with larger base text size
+#   theme_classic()+
+#   theme(axis.text.x = element_text( hjust = 0.5, size = 25, face = "bold"),
+#         axis.text.y = element_text(size = 23, face = "bold"),
+#         axis.title.x = element_text(size = 30, face = "bold"),
+#         axis.title.y = element_text(size = 27, face = "bold"),
+#         axis.line = element_line(size = 1.5),
+#         legend.position = 'none')
+# 
 
 
 min(Bag_data$Biomass_day)*(1e+06/15)
 
-Fire interval and biomass
+#Fire interval and biomass
 emm_biomass_Interval%>%
   summarise(emmeans_avg= mean(emmean))%>%
   mutate(emmeans_biomass_g_ha_day= (10^emmeans_avg)*(1e+06/15))
@@ -114,32 +154,6 @@ emm_biomass_Interval%>%
 #   ggplot(aes(x=Site,y=biomass_g_ha_day))+
 #   geom_col(aes(fill=Transect),position = "dodge")+
 #   facet_grid(~Fire.Severity,scales = "free_x")
-
-severity_colors <- c("High" = "darkolivegreen", "Low" = "cornflowerblue")
-interval_colors <- c("Long" = "darkred", "Short" = "orange")
-
-
-p<-ggplot(emm_biomass_Interval, aes(x = Fire.Interval, y = (10^(emmean)*(1e+06/15))) )+
-  geom_col(aes(fill=Fire.Interval),size=4, width = .7) +
-  geom_point(data=Bag_data, aes(x=Fire.Interval, y=(Biomass_day)*(1e+06/15)), size=3, alpha=.6)+
-  geom_errorbar(aes(ymin = ((10^lower.CL)*(1e+06/15)),
-                    ymax = ((10^upper.CL)*(1e+06/15)), width = 0.2 ),
-                width= .4, size= 1.5) +
-  labs(x = "Fire Frequency", y = "Hyphal Production (g/ha/day)") +
-  scale_fill_manual(values = interval_colors) +     # Custom colors for Interval
-  scale_y_continuous(breaks = seq(0, 2300, by = 250)) +
-  annotate("text", x = 1.6, y = Inf, label = paste0("Severity (p) = ", Anova_resin["Fire.Interval", "Pr(>F)"]),
-           hjust = 2.5, vjust = 1.5, size = 12)+
-  theme_classic()+
-  theme(axis.text.x = element_text( hjust = 0.5, size = 25, face = "bold"),
-        axis.text.y = element_text(size = 23, face = "bold"),
-        axis.title.x = element_text(size = 30, face = "bold"),
-        axis.title.y = element_text(size = 27, face = "bold"),
-        axis.line = element_line(size = 1.5),
-        legend.position = 'none')
-
-
-p
 
 
 #Orthophosphate
@@ -165,8 +179,8 @@ r2(m1)
 
 
 #Nitrate
-m2<-lmer(log10(Nitrate_mg_kg)~  Fire.Severity+ Fire.Interval +(1|Site/Transect) , data=Bag_data)
-
+m2<-lmer(log10(Nitrate_mg_kg)~  Fire.Severity+ Fire.Interval + (1|Site/Transect) , data=Bag_data)
+#perc_N_fix_freq
 
 #m2<-lmer((Nitrate_mg_kg_log)~Fire.Severity+ Fire.Interval + Ortho_P_mg_kg + Ammonia_mg_kg + pH+ (1|Site/Transect) , data=Bag_data)
 
@@ -197,8 +211,8 @@ emmip(m2, ~Fire.Interval)
 
 
 #Ammonia
-m3<-lmer(log10(Ammonia_mg_kg) ~   Fire.Interval + Fire.Severity + (1|Site/Transect) , data=Bag_data)
-
+m3<-lmer(log10(Ammonia_mg_kg) ~   Fire.Interval + Fire.Severity  + (1|Site/Transect) , data=Bag_data)
+#perc_N_fix_freq
 
 #m3<-lmer((Ammonia_mg_kg_log)~Fire.Severity+ Fire.Interval + Ortho_P_mg_kg + Nitrate_mg_kg + pH+ (1|Site/Transect) , data=Bag_data)
 
