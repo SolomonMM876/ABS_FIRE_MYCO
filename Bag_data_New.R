@@ -59,7 +59,7 @@ write.csv(bag_data, file='Processed_data/bag_data.csv')
 
 
 # Merge bag and mycorrhizal data by Tube_ID
-bag_myc <- left_join(bag_data, myc_data, by = 'Tube_ID') %>%
+bag_myc <- left_join(bag_data%>%mutate(Tube_ID=as.factor(Tube_ID)), myc_data, by = 'Tube_ID') %>%
   group_by(Site, Transect, Location) %>%
   mutate(Res_total_bag= Res_nute_sub_w+Res_remain_w)%>%
   ungroup()
@@ -144,7 +144,7 @@ Site_Info <- read_excel("Raw_data/Site_Data/Site.Info.xlsx") %>%
 
 
 # Merge all site data into one final dataset
-site_data <- left_join(bag_data%>%select(Site,Transect,Location,harvest_date), Site_Info)%>%
+site_data <- left_join(bag_data%>%select(Tube_ID,Site,Transect,Location,harvest_date), Site_Info)%>%
 # Convert dates and calculate days installed
   mutate(
     harvest_date = as_date(harvest_date),
@@ -160,6 +160,13 @@ site_data %>%ungroup()%>%
     Days_Installed = mean(Days_Installed),
     SE =sqrt(n())
   )
+
+
+site_data$Tube_ID[site_data$Tube_ID == 11] <- 8
+#Tube 8 and 11 come from the same location, I treated them separately, but should have combined them, here I am removing Tube 11 and only using Tube 8
+#I have left the tubes as they are until here to sum the total biomass harvested from each tube
+#Then I get rid of the duplicate row
+site_data<-site_data%>%distinct()
 
 # Log transformations and biomass calculations
 Bag_Site <- left_join(corrected_myc,site_data) %>%

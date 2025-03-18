@@ -85,16 +85,24 @@ guild_keywords <- c("Ectomycorrhizal", "Arbuscular Mycorrhizal", "Orchid Mycorrh
 Guilds <- subset(guil.trait, str_detect(guild, str_c(guild_keywords, collapse = "|")))%>%
   filter(confidenceRanking %in% c("Probable", "Highly Probable"))# Keep only specified values
 
+
 write.csv(Guilds, "Funguild/All_guilds.csv", row.names = FALSE)
 
 
 # Define a more specific list of mycorrhizal guilds
 myco_keywords <- c("Ectomycorrhizal", "Arbuscular Mycorrhizal", "Orchid Mycorrhizal", "Ericoid Mycorrhizal")
 
-# Filter dataset to include only mycorrhizal guilds
-myco_Guilds <- subset(guil.trait, str_detect(guild, str_c(myco_keywords, collapse = "|")))%>%
-  filter(confidenceRanking %in% c("Probable", "Highly Probable"))%>%# Keep only specified values
-  filter(!Genus %in% c('Leohumicola','Rhizoctonia'))# these genera are iffy and have been classified as both myco and path, so I am excluding them
+
+myco_Guilds<-guil.trait%>%  filter(confidenceRanking %in% c('Probable',"Highly Probable"))%>%
+  select(Genus,guild,higher_clade,studyName,taxonomicLevel:citationSource)%>%
+  filter(str_detect(guild, str_c(myco_keywords, collapse = "|")))       
+          
+
+myco_Guilds2<-guil.trait%>%  filter(confidenceRanking %in% c('Probable',"Highly Probable"))%>%
+  select(Genus,guild,higher_clade,studyName,taxonomicLevel:citationSource)%>%
+filter(str_detect(guild, "mycorrhizal") | str_detect(guild, "Mycorrhizal")) %>%
+  filter(!Genus %in% c('Leohumicola', 'Rhizoctonia')) # Exclude specific genera    
+
 # Extract unique guild names from the dataset
 xaxis <- Guilds$guild  
 unique(guil.trait$guild)

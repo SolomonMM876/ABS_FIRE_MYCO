@@ -1,13 +1,13 @@
 source('Soil_ITS_Scripts/Soil_ITS_data prep.R')
 library(ggplot2)
+library(patchwork)
 
+######################################################
+guild_perc<-dat_all_RA_soil%>%
+  group_by(guild2)%>%
+  summarise(percent_guild2= (sum(readcount)/first(total_reads))*100)
+guild_perc
 
-trophic_mode<-dat_all_RA%>%
-  group_by(trophicMode)%>%
-  summarise(percent_troph= (sum(readcount)/total_reads)*100)
-trophic_mode
-
-taxa_w_guild<-tax%>%filter(!is.na(guild))
 
 guild_comp<-tax%>%
   group_by(guild2)%>% 
@@ -19,17 +19,32 @@ phyla_comp<-tax%>%
   group_by(Phylum)%>% 
   distinct()%>%
   summarise(OTUs= n())
-phyla_comp%>%select(Phylum)%>%pull()
+phyla_comp
 
-Phylum_comp<-dat_all_RA%>%
+Phylum_comp<-dat_all_RA_soil%>%
   group_by(Phylum)%>%
-  summarise(percent_phyla= (sum(readcount)/total_reads)*100)
+  summarise(percent_phyla= (sum(readcount)/first(total_reads))*100)
 Phylum_comp
 
-library(patchwork)
+Phylum_comp<-dat_myco_RA_soil%>%
+  group_by(Phylum,Interval)%>%
+  summarise(percent_phyla= (sum(readcount)/first(interval_reads))*100)
+Phylum_comp
+
+Phylum_comp<-dat_myco_RA_soil%>%
+  group_by(Phylum,Severity)%>%
+  summarise(percent_phyla= (sum(readcount)/first(severity_reads))*100)
+Phylum_comp
+
+min(dat_all_RA_soil$reads_samp)
+max(dat_all_RA_soil$reads_samp)
+
+dat_all_RA_soil%>%select(Site,Transect,Severity,Interval)%>%group_by(Severity)%>%distinct()%>%summarise(n())
+
+dat_all_RA_soil%>%select(Site,Transect)%>%distinct()%>%summarise(n())
 
 #All guilds graphs
-Interval_Comm<-dat_all_RA %>% 
+Interval_Comm<-dat_all_RA_soil %>% 
   ggplot(aes(x=Interval, y=RA_total_interval, fill=guild2, text=Species)) + # text aesthetic is for the ggplotly visualisation below
   geom_bar(stat = 'identity' ,position = position_stack(), width = 0.4) +
   scale_x_discrete(drop=FALSE) + 
@@ -48,7 +63,7 @@ Interval_Comm<-dat_all_RA %>%
 Interval_Comm
 
 
-Severity_Comm<-dat_all_RA %>% 
+Severity_Comm<-dat_all_RA_soil %>% 
   ggplot(aes(x=Severity, y=RA_total_severity, fill=guild2, text=Species)) + # text aesthetic is for the ggplotly visualisation below
   geom_bar(stat = 'identity' ,position = position_stack(), width = 0.4) +
   scale_x_discrete(drop=FALSE) + 
@@ -66,7 +81,7 @@ Severity_Comm<-dat_all_RA %>%
 Severity_Comm
 
 
-Interval_Comm +Severity_Comm
+#Interval_Comm +Severity_Comm
 #######################################################
 
 
@@ -77,8 +92,8 @@ Interval_Comm +Severity_Comm
 
 
 #mycorrhizal explo_RA
-Interval_explo<-dat_myco_RA %>% 
-  ggplot(aes(x=Interval, y=RA_total_interval, fill=exploration_type, text=Species)) + # text aesthetic is for the ggplotly visualisation below
+Interval_explo<-dat_explo_soil %>% 
+  ggplot(aes(x=Interval, y=RA_explo_Interval, fill=exploration_type)) + # text aesthetic is for the ggplotly visualisation below
   geom_bar(stat = 'identity' ,position = position_stack(), width = 0.4) +
   scale_x_discrete(drop=FALSE) + 
   theme_classic()+
@@ -95,8 +110,8 @@ Interval_explo<-dat_myco_RA %>%
   labs(y='Proportion EcM sequences from Soil', x= 'Fire Frequency') 
 Interval_explo
 
-Severity_explo<-dat_myco_RA %>% 
-  ggplot(aes(x=Severity, y=RA_total_severity, fill=exploration_type, text=Species)) + # text aesthetic is for the ggplotly visualisation below
+Severity_explo<-dat_explo_soil%>% 
+  ggplot(aes(x=Severity, y=RA_explo_Severity, fill=exploration_type)) + # text aesthetic is for the ggplotly visualisation below
   geom_bar(stat = 'identity' ,position = position_stack(), width = 0.4) +
   scale_x_discrete(drop=FALSE) + 
   theme_classic()+
@@ -110,12 +125,21 @@ Severity_explo<-dat_myco_RA %>%
   labs(y= NULL, x= 'Fire Severity') 
 Severity_explo
 
-Interval_explo+Severity_explo
+#Interval_explo+Severity_explo
 ##################################################
 #mycorrhizal genera
 
-Interval_Genus_myco<-dat_myco_RA %>% 
-  ggplot(aes(x=Interval, y=RA_total_interval, fill=Genus, text=Species)) + # text aesthetic is for the ggplotly visualisation below
+# Identify the top 10 most abundant genera
+top_genera_soil <- dat_myco_RA_soil %>%
+  group_by(Genus) %>%
+  summarise(total_abundance = sum(RA_total_severity, na.rm = TRUE)) %>%
+  arrange(desc(total_abundance)) %>%
+  slice_head(n = 10) %>%
+  pull(Genus)
+
+Interval_Genus_myco<-dat_myco_RA_soil %>% 
+  mutate(genus_grouped = if_else(is.na(Genus) | !(Genus %in% top_genera_soil), "Other", Genus)) %>%
+  ggplot(aes(x=Interval, y=RA_total_interval, fill=genus_grouped, text=Species)) + # text aesthetic is for the ggplotly visualisation below
   geom_bar(stat = 'identity' ,position = position_stack(), width = 0.4) +
   scale_x_discrete(drop=FALSE) + 
   theme_classic()+
@@ -128,12 +152,12 @@ Interval_Genus_myco<-dat_myco_RA %>%
         legend.title = element_text(size = 18),
         plot.tag = element_text(size=25,hjust = 0.5),
         legend.position="none")+
-  guides(fill = guide_legend(override.aes = list(shape = 16, size = 8))) +
   labs(y='Proportion EcM sequences from Soil', x= 'Fire Frequency') 
 Interval_Genus_myco
 
-Severity_Genus_myco<-dat_myco_RA %>% 
-  ggplot(aes(x=Severity, y=RA_total_severity, fill=Genus, text=Genus)) + # text aesthetic is for the ggplotly visualisation below
+Severity_Genus_myco<-dat_myco_RA_soil %>% 
+  mutate(genus_grouped = if_else(is.na(Genus) | !(Genus %in% top_genera_soil), "Other", Genus)) %>%
+  ggplot(aes(x=Severity, y=RA_total_severity, fill=genus_grouped, text=Genus)) + # text aesthetic is for the ggplotly visualisation below
   geom_bar(stat = 'identity' ,position = position_stack(), width = 0.4) +
   scale_x_discrete(drop=FALSE) + 
   theme_classic()+
@@ -143,12 +167,11 @@ Severity_Genus_myco<-dat_myco_RA %>%
         axis.title.y =element_blank(),
         legend.text = element_text(size = 12),  # Increase legend text size
         legend.title = element_text(size = 18) )+
-  guides(fill = guide_legend(override.aes = list(shape = 16, size = 8))) +
+  guides(fill = guide_legend(override.aes = list(shape = 16, size = 12))) +
   labs(y= NULL, x= 'Fire Severity') 
 Severity_Genus_myco
 
-
-Interval_Genus_myco +Severity_Genus_myco
+#Interval_Genus_myco +Severity_Genus_myco
 
 # Extract the ggplot build object
 plot_build <- ggplot_build(Severity_Genus_myco)
@@ -162,8 +185,5 @@ genus_colors <- unique(plot_data %>% select(fill, text))
 # Rename columns for clarity
 colnames(genus_colors) <- c("fill_color", "Genus")
 
-#################
 
-#Assemble the Figure!
-(Interval_Comm +Severity_Comm )+(Interval_explo+Severity_explo)+ (Interval_Genus_myco +Severity_Genus_myco)
 

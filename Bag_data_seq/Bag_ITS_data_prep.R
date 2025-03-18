@@ -1,68 +1,70 @@
 #LOAD LIBRARARIES
 library(tidyverse)
 library(vegan)
-library(readxl)
 library(readr)
-library(ggplot2)
-library(stringr)
+library(readxl)
 
-dat <- read_tsv('Raw_data/Jeff_Prelim/SMM/ITS_output_clean.tsv')
 
-#filter out data for CNP measurements and community
-CNP_dat<-dat%>%
-  filter(is.na(Site))
-
-write.csv(CNP_dat, file='Processed_data/CNP_seq_dat.csv',row.names=FALSE)
 
 #Clean dat at location level
-clean_dat <- dat %>%
-  #remove transect pooled samples for CN
-  anti_join(CNP_dat, by = colnames(CNP_dat)) %>%
-  #Samples 95 and 96 were pooled. I have separated them,
-  #but for transect analyses they should be removed when looking at location based correlations
-  mutate(Tube_ID = case_when(
-    Location == 3 & Transect == 2 & Site == 11 ~ "95",
-    Location == 33 & Transect == 2 & Site == 11 ~ "96",
-    TRUE ~ Tube_ID  # Keep the original value if no condition is met
-  ))%>%
-  filter(!Tube_ID %in% c('84'))%>%#Tube 84 is linked to two locations 11-1-16 and 11-2-16 due to extraction error (good for Site analysis bad for transect)
-  filter(!Tube_ID %in% c(8,11))#these tubes are both from site 29, but I mixed up the transects and it creates duplication errors when I keep samples in
-  rm(CNP_dat,dat)
+clean_dat <- read.csv('Processed_data/ITS_Site_clean.csv')
 
-Guild_dat<-clean_dat%>%  filter(confidenceRanking %in% c('Probable',"Highly Probable"))%>%
-  mutate(guild2 = case_when(trophicMode == 'Saprotroph' ~ 'Saprotroph',
-                            str_detect(guild, "Arbuscular Mycorrhizal") ~ 'Arbuscular Mycorrhizal',
-                            str_detect(guild, "Ectomycorrhizal") ~ 'Ectomycorrhizal',
-                            str_detect(guild, "Orchid Mycorrhizal") ~ 'Orchid Mycorrhizal',
-                            str_detect(guild, "Ericoid Mycorrhizal") ~ 'Ericoid Mycorrhizal',
-                            str_detect(guild, "Endophyte") ~ 'Endophyte',
-                            str_detect(guild, "Epiphyte") ~ 'Epiphyte',
-                            str_detect(family, "Mortierellaceae") ~ 'Saprotroph',
-                            str_detect(guild, "Parasite") ~ 'Parasite',
-                            str_detect(guild, "Pathogen") ~ 'Pathogen',
-                            TRUE ~ 'unassigned'))
+clean_dat%>%select(Tube_ID)%>%distinct()%>%arrange(desc(as.numeric(Tube_ID)))->t
+#90 samples to start
 
-temp<-Guild_dat%>%filter(guild2=='unassigned')
+
+Guild_dat <- clean_dat %>%
+  filter(confidenceRanking == "Highly Probable" | OTU %in% c("ITSall_OTUa_10308", "ITSall_OTUk_1642", "ITSall_OTUm_3073")) %>%  # Keep "Highly Probable" & specified OTUs
+  filter(!str_detect(guild, "-") | OTU %in% c("ITSall_OTUa_10308", "ITSall_OTUk_1642", "ITSall_OTUm_3073")) %>%  # Exclude multiple guilds except for specified OTUs
+  mutate(guild2 = case_when(
+    str_detect(guild, "Arbuscular Mycorrhizal") ~ "Arbuscular Mycorrhizal",
+    str_detect(guild, "Ectomycorrhizal") ~ "Ectomycorrhizal",
+    str_detect(guild, "Ericoid Mycorrhizal") ~ "Ericoid Mycorrhizal",
+    str_detect(guild, "Orchid Mycorrhizal") ~ "Orchid Mycorrhizal",
+    TRUE ~ "other"
+  ),
+  note = if_else(OTU %in% c("ITSall_OTUa_10308", "ITSall_OTUk_1642", "ITSall_OTUm_3073"), 
+                 "Included due to manual BLAST confirmation", 
+                 NA_character_))  # Add note for manually included OTUs
+
+Guild_dat%>%select(Tube_ID)%>%distinct()%>%arrange(desc(as.numeric(Tube_ID)))->t
+#lost one sample in filtering for taxa with only highly probable and single guild
+
+#temp<-Guild_dat%>%filter(guild2=='Ericoid Mycorrhizal')
 rm(clean_dat)
-#funguild output
-Myco<-read.csv("Funguild/Myco_guilds.csv")#IDing all OTUs that are mycorrhizal 
+
 
 #explo types Polme et al 2021
 Fun_Traits<-read_excel("Processed_data/Polme_etal_2021_FungalTraits.xlsx")
 
 #select only mycorrhizal taxa
 myco_dat<-Guild_dat%>%
-  mutate (guild = case_when(genus %in% Myco$Genus ~ 'mycorrhizal',
-                            TRUE ~ guild ))%>%
-  filter(guild=='mycorrhizal')%>%
+  filter(str_detect(guild, "mycorrhizal") | str_detect(guild, "Mycorrhizal")) %>%
   left_join(Fun_Traits%>%rename(genus=GENUS)%>%
               select(genus,Ectomycorrhiza_exploration_type_template,Ectomycorrhiza_lineage_template))%>%
   rename(exploration_type=Ectomycorrhiza_exploration_type_template,
-         Ecm_lineage=Ectomycorrhiza_lineage_template)
+         Ecm_lineage=Ectomycorrhiza_lineage_template)%>%
+  mutate(exploration_type = na_if(exploration_type, "unknown"))  # Convert "Unknown" to NA
+
+
+myco_dat<-myco_dat%>% #add the total_myco reads per sample
+  left_join(myco_dat%>%group_by(barcode)%>%summarise(myco_reads=sum(count)))%>%
+  mutate(Tube_ID=as.factor(Tube_ID))
+
+myco_dat%>%select(Tube_ID)%>%distinct()%>%arrange(desc(as.numeric(Tube_ID)))->t
+#lost 2 samples filtering for mycorrhizal OTUs
 
 write.csv(myco_dat, 'Processed_data/Bag_Seq_myco_dat.csv', row.names = FALSE)
 
 
+
+
+otu_table<-myco_dat%>%select(Tube_ID, OTU, count) %>% 
+  pivot_wider(names_from = OTU, values_from = count, values_fill = 0)%>%
+  column_to_rownames('Tube_ID')#Tube_ID 77 and 89 have no mycorrhizal fungi in them 
+  
+
+write.csv(otu_table,'Processed_data/otu_table_bag.csv')
 
 #select taxa
 all_tax<-Guild_dat%>%
@@ -73,28 +75,22 @@ myco_tax<-myco_dat%>%
   select(OTU,kingdom:species, guild,guild2)%>%
   distinct()
 
-rm(Myco,Fun_Traits)
+rm(Fun_Traits)
+
 
 #All meta data from 12 sites with bags collected
-Bag_data<-read.csv('Processed_data/All_Bag_data.csv')[,-1]
-
-Bag_Site_ID<-read.csv('Processed_data/All_Bag_Site_Info.csv')%>%
-  filter(!Tube_ID %in% c(8,11))#these tubes are both from site 29, but I mixed up the transects and 
-  #it creates duplication errors when I keep samples in
-  #I could include them in Site level analyses.
+#from df joins script
+Bag_data<-read.csv('Processed_data/All_Bag_data.csv')%>%
+  filter(!Tube_ID %in% c(84))%>% mutate(Tube_ID=as.factor(Tube_ID))
+  #Tube 84 is linked to two locations 11-1-16 and 11-2-16 due to extraction error (good for Site analysis bad for transect)
   # setdiff(names(Bag_data), names(Bag_Site_ID))
   # setdiff(names(Bag_Site_ID), names(Bag_data))
 
-Bag_data<-Bag_data%>%left_join(Bag_Site_ID, relationship = "many-to-many")%>%#doing this to get Tube_ID from Bag_Site_ID
-  filter(!is.na(Tube_ID))%>%mutate(Tube_ID=as.factor(Tube_ID))#remove cols with na values left over from removing tubes 8 and 11
 
-rm(Bag_Site_ID)
-#t<-Bag_data%>%select(Site,Transect,Location,Tube_ID)%>%group_by(Site,Transect)%>% mutate(n())
-#missing 2 samples from site 29 crossing transects
-#Sample site 56 and sample site 49
+#1 Sample site 56 and 1 sample site 49 both not enough biomass during harvest
 
 #All taxa
-Bag_Guild<-Bag_data%>%
+Bag_Guild<-Bag_data%>% 
   dplyr::select(Tube_ID,Site,Transect,Fire.Severity,Fire.Interval, Location)%>%
   right_join(Guild_dat%>% mutate(Tube_ID=as.factor(Tube_ID)))
 
@@ -160,7 +156,8 @@ Bag_Seq_wide<-left_join(Bag_data%>%
                                  Ortho_P_mg_kg,Nitrate_mg_kg, Ammonia_mg_kg,pH,#Nutrients from resin data
                                  log10_biomass_day,perc_myco_host_freq, #biomass data
                                  C_N,C_P,N_P,Carb_Hyph,Nitrog_Hyph,Phos_Hyph,
-                                 Longitude,Latitude), #meta data
+                                 Longitude,Latitude)%>%
+                          left_join(myco_dat%>%select(Tube_ID,myco_reads)%>%distinct()), #meta data
                         wide_myco)%>%
   mutate(across(starts_with('ITSall'), ~replace_na(., 0)))
 
@@ -169,18 +166,15 @@ Bag_Seq_wide<-left_join(Bag_data%>%
 #   mutate(across(everything(), ~ ifelse(is.na(.), ., NA))) %>%
 #   filter(if_any(everything(), ~ !is.na(.)))
 
-write.csv(Bag_Seq_wide, 'Processed_data/Bag_Seq_wide.csv', row.names = FALSE)
-write.csv(Bag_data, 'Processed_data/Updated_Bag_data.csv', row.names = FALSE)
-write.csv(myco_tax, 'Processed_data/Bag_dat_myco_tax.csv', row.names = FALSE)
+write.csv(Bag_Seq_wide, 'Processed_data/Bag_Seq_wide.csv', row.names = FALSE)#bag data with selected meta and Myco communities
+write.csv(Bag_data, 'Processed_data/Updated_Bag_data.csv', row.names = FALSE)#Just Site info, veg nute meta etc
+write.csv(myco_tax, 'Processed_data/Bag_dat_myco_tax.csv', row.names = FALSE)#mycorrhizal taxa included
 
 
 #myco
-myco_reads<-Bag_myco%>%
-  summarise(sum(count))%>%
-  pull()
 
 
-dat_myco_RA<-Bag_myco%>%
+dat_myco_RA_bag<-Bag_myco%>%
   group_by(Site,Transect,Location)%>%
   summarise(reads_samp=sum(count))%>%
   left_join(Bag_myco)%>%
@@ -190,30 +184,50 @@ dat_myco_RA<-Bag_myco%>%
   left_join(Bag_myco%>%
               group_by(Fire.Interval)%>%
               summarise(interval_reads=sum(count)))%>%
-  mutate(RA_samp= count/reads_samp,
+  mutate(myco_reads=sum(count),
+    RA_samp= count/reads_samp,
          RA_total_reads= count/myco_reads,
          RA_total_interval= count/interval_reads,
          RA_total_severity= count/severity_reads)%>%
   left_join(Bag_data%>%select(Site,Transect,Location,perc_myco_host_freq,
                               Nitrate_mg_kg,Ammonia_mg_kg,Ortho_P_mg_kg))
+
+dat_explo_bag<-dat_myco_RA_bag%>%
+  filter(!is.na(exploration_type))%>%
+  group_by(Site,Transect,Location,exploration_type)%>%
+  summarise(explo_count=sum(count))%>%
+  left_join(dat_myco_RA_bag%>%select(Site,Transect,Location,Fire.Severity,Fire.Interval,reads_samp)%>%distinct())%>%
+  left_join(dat_myco_RA_bag%>%filter(!is.na(exploration_type))%>%
+              group_by(Fire.Interval)%>%
+              summarise(interval_reads_explo=sum(count)))%>%
+  left_join(dat_myco_RA_bag%>%filter(!is.na(exploration_type))%>%
+              group_by(Fire.Severity)%>%
+              summarise(Severity_reads_explo=sum(count)))%>%
+  mutate(RA_explo_Interval=explo_count/interval_reads_explo,
+         log_RA_explo_Interval=log10(RA_explo_Interval+(1.490598e-05)/2),
+         RA_explo_Severity=explo_count/Severity_reads_explo,
+         log_RA_explo_Severity=log10(RA_explo_Severity+(1.451303e-05)/2))
+
+
 #all seq data from bags
-total_reads<-Bag_Guild%>%
-  summarise(sum(count))%>%
-  pull()
 
-
-dat_all_RA<-Bag_Guild%>%
+dat_all_RA_bag<-Bag_Guild%>%
   group_by(Site,Transect,Location)%>%
   summarise(reads_samp=sum(count))%>%
   left_join(Bag_Guild)%>%
+  ungroup()%>%
   left_join(Bag_Guild%>%
               group_by(Fire.Severity)%>%
               summarise(severity_reads=sum(count)))%>%
+  ungroup()%>%
   left_join(Bag_Guild%>%
               group_by(Fire.Interval)%>%
               summarise(interval_reads=sum(count)))%>%
-  mutate(RA_samp= count/reads_samp,
+  ungroup()%>%
+  mutate(total_reads=sum(count),
+    RA_samp= count/reads_samp,
          RA_total_reads= count/total_reads,
          RA_total_interval= count/interval_reads,
          RA_total_severity= count/severity_reads)
+
 

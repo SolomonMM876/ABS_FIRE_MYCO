@@ -13,7 +13,7 @@ dat_path<-dat_all_RA%>%
   summarise(path_count=sum(readcount))%>%
   left_join(dat_all_RA%>%select(Site,Transect,Severity,Interval,reads_samp)%>%distinct())%>%
   mutate(RA_path=path_count/reads_samp,
-        log_RA_path=log10(RA_path+0.00038/2))
+        log_RA_path=log10(RA_path+0.0002853067/2))
 
 dat_plant_path<-dat_all_RA%>%
   rownames_to_column("SH_ID_OTU")%>%
@@ -23,7 +23,7 @@ dat_plant_path<-dat_all_RA%>%
   summarise(plant_path_count=sum(readcount))%>%
   left_join(dat_all_RA%>%select(Site,Transect,Severity,Interval,reads_samp)%>%distinct())%>%
   mutate(RA_plant_path=plant_path_count/reads_samp,
-         log_RA_plant_path=log10(RA_plant_path+0.001641546/2))
+         log_RA_plant_path=log10(RA_plant_path+0.002353585/2))
 
 dat_arma<-dat_all_RA%>%
   rownames_to_column("SH_ID_OTU")%>%
@@ -34,7 +34,7 @@ dat_arma<-dat_all_RA%>%
 hist(dat_path$log_RA_path)
 
 
-library(glmmTMB)
+#library(glmmTMB)
 library(DHARMa)
 
 #fire model for all paths

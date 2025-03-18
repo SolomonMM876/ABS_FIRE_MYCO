@@ -1,150 +1,18 @@
+source('Soil_ITS_Scripts/Soil_ITS_data prep.R')
 
 #LOAD LIBRARARIES
-library(forcats)
-library(tidyr)
-library(dplyr)
+library(tidyverse)
 library(vegan)
 library(indicspecies)
-library(tibble) 
-library(readxl)
-library(ggplot2)
-library(ggrepel)
-library(stringr)
 
-#All meta data from 30 sites
-Site_Precip_Temp_Elv <- read_excel("Processed_data/Site_Precip_Temp_Elv.xlsx")%>%
-  rename(elev=wc2.1_30s_elev)%>%
-  select(site,Annual_Temp,Annual_Prec,elev)%>%
-  rename(Site=site)
-Site_Precip_Temp_Elv$Site= sub(c('ABS00|ABS0'),'',Site_Precip_Temp_Elv$Site) 
-
-Bag_Site<-read.csv('Processed_data/All_Bag_Site_Info.csv')
+#select only mycorrhizal OTUs from sites we previously selected
+mat_myco <-  filtered_mat %>% as.data.frame() %>% 
+  select(all_of(myco_otus))%>%# just ecto OTUs
+  filter(rownames(.) %in% Site_Sample_IDs)  # Keep only the desired samples
 
 
-#Nute and Veg data
-Nutrients_Transects<-read_excel('Processed_data/Nutrients_Transect_level.xlsx')
-VEG_COVER_Transects <- read_excel("Raw_data/Site_Data/ABS.MER.fielddata.Feb.2023_R.PROCESSED.VEG.COVER_ALL.xlsx", 
-    sheet = "Transect.Level_Data")
-VEG_COVER_Transects$Site= sub(c('ABS00|ABS0'),'',VEG_COVER_Transects$Site)
-VEG_COVER_Transects$Transect= sub(c('T'),'',VEG_COVER_Transects$Transect)
-
-Myco_plant_spp<-read.csv('Processed_data/Myco_host_abundance.csv')%>%
-  mutate(Site=as.factor(Site),
-         Transect=as.factor(Transect))
-
-
-#import Blast ID df and clean data
-Blast_ID<-read_excel('Raw_data/Updated_Data/ABS.MER.fielddata.Feb.2023_Site.Info_AF.xlsx')
-Blast_ID$Site= sub(c('ABS00|ABS0'),'',Blast_ID$Site)
-Blast_ID$sample_ID<-as.character(Blast_ID$sample_ID)
-Blast_ID$transect<-as.character(Blast_ID$transect)
-Blast_ID$sample_ID<-sub(c("-"),".",Blast_ID$sample_ID)
-Blast_ID$sample_ID<-sub(c("-"),".",Blast_ID$sample_ID)
-names(Blast_ID)[9]<-'Veg_Class_Abv'
-
-
-
-Blast_ID<-Blast_ID%>%
-  dplyr::mutate(Regime = paste(Interval, Severity, sep = "_"))%>%
-  rename(Transect=transect)%>%
-  left_join(VEG_COVER_Transects)%>%
-  left_join(Nutrients_Transects)%>%
-  left_join(Myco_plant_spp)%>%
-  select(-`Fire 3`,-`Interval (yrs)...16`,-`FESM severity category`)%>%
-  left_join(Site_Precip_Temp_Elv)%>%
-#this is selecting for the 30 decomp sites which I have CN data for all of
- filter(!is.na(Carbon))%>%
-  #Site 60 was mislabeled and it wasnt clear what site 60 was so it is removed
-  filter(!Site==60)%>%
-#Sample 34.1 is missing total P
-  filter(!sample %in% c(34.1))
-
-
-Blast_ID %>%
-  count(Severity, Interval)
-
-
-
-#funguild output
-AM <- read_excel("Funguild/AM.xlsx")
-Ecto <- read_excel("Funguild/Ecto.xlsx")
-Path<- read_excel("Funguild/Path.xlsx")
-Sap<- read_excel("Funguild/Sap.xlsx")
-
-
-#taxonomy table
-otu<-read.csv('Raw_data/Updated_Data/demultiplexed.cleaned.combined.cf.fasta.blast.i97.a95.csv')
-#remove first three rows that do not have taxonomy ids and 2 rows with totals and sample counts 
-otu<-otu[-c(1:3),-c(2:3) ]
-
-tax <- otu %>%
-  separate(taxonomy, into = c("Percentage", "Species_Name", "Accession", "SH_ID", "Reference", "Taxonomy_Details"), sep = "\\|", extra = "drop") %>%
-  separate(Taxonomy_Details, into = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"), sep = ";") %>%
-  select(SH_ID:Species)%>%
-  mutate(across(Kingdom:Species, ~ gsub('^[a-z]__', '', .)),
-  guild = case_when(Genus %in% Ecto$Genus ~ 'ectomycorrhizal', 
-                    Genus %in% AM$Genus ~ 'arbuscular_mycorrhizal', 
-                    Genus %in% Path$Genus ~ 'pathogenic', 
-                    Genus %in% Sap$Genus ~ 'saprotrophic'))
-# any kingdom-to-genus unclassified, change to NA
-tax[tax %in% grep('unclassified', tax, value=T)] <- NA
-#I am not sure why the code above does not work, but the code below does
-tax <- tax %>%
-  mutate(Species = ifelse(str_detect(Species, '_sp'), NA, Species),
-         across(everything(), ~ str_remove(., "_fam_Incertae_sedis|_gen_Incertae_sedis|_ord_Incertae_sedis|_cls_Incertae_sedis|_phy_Incertae_sedis")))
-
-
-
-library(readxl)
-Fun_Traits<-read_excel("Processed_data/Polme_etal_2021_FungalTraits.xlsx")
-# add exploration types
-tax<-tax%>%
-  left_join(Fun_Traits%>%rename(Genus=GENUS))%>%
-  select(SH_ID:guild,Ectomycorrhiza_exploration_type_template,Ectomycorrhiza_lineage_template)%>%
-  rename(exploration_type=Ectomycorrhiza_exploration_type_template,
-         Ecm_lineage=Ectomycorrhiza_lineage_template)%>%
-  mutate(across(c(exploration_type,Ecm_lineage), ~replace_na(.x, "unknown")))# Replace NA with "Unknown" 
-
-#change first col name to something easy
-names(otu)[1]<-'SH_ID'
-
-# transpose community table, to sample-taxon, for vegan functions and remove taxonomy col
-mat<-otu%>%
-  select(-last_col())%>%
-  remove_rownames()%>%
-  column_to_rownames("SH_ID")%>%
-  t()
-
-# assess variation in sampling effort, plotting sample effort curves
-mat <- mat[rowSums(mat) >= 1000, ]  # Keep only samples with at least 1000 reads
-temp <- rarecurve(mat, step=1000, tidy=TRUE)
-Blast_ID%>%
-left_join( temp %>% rename( sample_ID=Site))%>% 
-  #filter(Site %in% c( 50:63))%>%
-  ggplot(aes(x=Sample, y=Species, colour=as.factor(Transect), group=sample_ID)) + 
-  geom_line() + 
-  facet_wrap(~as.numeric(Site))
-
-
-
-# check variation in sample effort, looking for break points WHAT DOES THIS MEAN
-hist(log10(rowSums(mat)))
-sort(rowSums(mat))[1:63]
-
-
-
-
-# prepare our data for betadiversity analyses:
-# 1 - focus analysis on ectomycorrhizal fungal taxa (create vector of OTU ids)
-# 2 - join the community table with our metadata table (need to also modify the community table so that it can be joined)
-myco_otus <- filter(tax, guild%in% c("ectomycorrhizal","arbuscular_mycorrhizal"))$SH_ID
-ecm_otus <- filter(tax, guild=='ectomycorrhizal')$SH_ID
-dat_ecm_30_site <- right_join( mat %>% 
-                        as.data.frame() %>% 
-                        dplyr::select(all_of(myco_otus)) %>% # just ecto OTUs
-                        rownames_to_column('sample_ID'), Blast_ID) %>%
-  filter(!if_any(everything(), is.na))  # drop the sites that were removed because there was not enough seq depth
-
+dat_ecm_30_site <- left_join( mat_myco%>%
+                        rownames_to_column('sample_ID'), Blast_ID) 
 
 
 # first analysis - indicator species analysis 
@@ -217,7 +85,7 @@ p
 
 # finally produce the barplot
 Interval_Indicator<-out_Interval %>% 
-  ggplot(aes(x=Interval, y=(count/p)*100, fill=exploration_type, text=SH_ID)) + # text aesthetic is for the ggplotly visualization below
+  ggplot(aes(x=Interval, y=(count/p)*100, fill=Genus, text=SH_ID)) + # text aesthetic is for the ggplotly visualization below
   geom_bar(stat = 'identity' ,position = position_stack(), width = 0.4) +
   scale_x_discrete(drop=FALSE) + 
   theme_classic()+
@@ -234,7 +102,7 @@ Interval_Indicator<-out_Interval %>%
 Interval_Indicator
 
 Severity_Indicator<-out_Severity %>% 
-  ggplot(aes(x=Severity, y=(count/p)*100, fill=exploration_type, text=SH_ID)) + # text aesthetic is for the ggplotly visualisation below
+  ggplot(aes(x=Severity, y=(count/p)*100, fill=Genus, text=SH_ID)) + # text aesthetic is for the ggplotly visualisation below
   geom_bar(stat = 'identity', position = position_stack(), width = 0.4) +
   scale_x_discrete(drop=FALSE) + 
   #scale_fill_manual(values = custom_palette) +  #palette.pals()
@@ -250,7 +118,8 @@ Severity_Indicator<-out_Severity %>%
 
 Severity_Indicator
 
-
+library(patchwork)
+Interval_Indicator+Severity_Indicator
 # use this next lines to interactively get OTU IDs
 plotly::ggplotly(Interval_Indicator)
 #######################
@@ -263,62 +132,36 @@ plotly::ggplotly(Interval_Indicator)
 # next analysis - permanova
 # extract the community table, save as a new object
 
-mat_ecm_w_0 <- dat_ecm_30_site %>% select(ends_with('.09FU'))
-
-
-#remove transects with 0 reads (these mostly are the sites 50-60 that have weirdly low reads)
-rows_zero_na <- which(apply(mat_ecm_w_0, 1, function(row) all(row == 0)))
-# 
-zero_value_rows<-dat_ecm_30_site[rows_zero_na,]
-# 
-mat_ecm<-mat_ecm_w_0[-rows_zero_na,]
-# 
-dat_ecm_30_site<-dat_ecm_30_site[-rows_zero_na,]
+mat_ecm <- dat_ecm_30_site %>% select(ends_with('.09FU'))
 
 
 
-adonis2(mat_ecm ~ Severity+Interval+ Veg_Class +
-          Tree.Basal.Area_m2 + Herb.Cover_0.50cm_perc + perc_myco_host_freq+
-          NH4 + NO3 + Bray.P+Total.P , data=dat_ecm_30_site, distance='robust.aitchison', add=TRUE)
+adonis2(mat_ecm ~ Severity+Interval , data=dat_ecm_30_site, distance='robust.aitchison', add=TRUE)
 
 table(dat_ecm_30_site$Interval)
+table(dat_ecm_30_site$Severity)
 
 
 
-cap.all <- capscale(mat_ecm~ Interval+Severity +Veg_Class +
-                      Tree.Basal.Area_m2 + Herb.Cover_0.50cm_perc + perc_myco_host_freq+
-                      NH4 + NO3 + Total.P 
-                    , data=dat_ecm_30_site, distance='robust.aitchison', add=TRUE)
+cap.all <- capscale(mat_ecm~ Interval+Severity  , data=dat_ecm_30_site, distance='robust.aitchison', add=TRUE)
 
 
 
 # a constrained analysis of principal coordinates using a different distance index - result is quite good
-cap1 <- capscale(mat_ecm ~ Interval+Severity +Veg_Class +
-                   Tree.Basal.Area_m2 + Herb.Cover_0.50cm_perc + perc_myco_host_freq+
-                   NH4 + NO3 + Total.P
-                 , data=dat_ecm_30_site, distance='robust.aitchison', add=TRUE)
-Cap1_aov<-as.data.frame( anova(cap1, by = "margin"))%>%
+# cap1 <- capscale(mat_ecm ~ Interval+Severity +Veg_Class +
+#                    Tree.Basal.Area_m2 + Herb.Cover_0.50cm_perc + perc_myco_host_freq+
+#                    NH4 + NO3 + Total.P
+#                  , data=dat_ecm_30_site, distance='robust.aitchison', add=TRUE)
+Cap1_aov<-as.data.frame( anova(cap.all, by = "margin"))%>%
   rownames_to_column()
-plot(cap1)
-cap1 # summary of inertia
-proportions<-round(cap1$CCA$eig/cap1$tot.chi *100, 1) # proportion of variation associated with each axis
+plot(cap.all)
+cap.all # summary of inertia
+proportions<-round(cap.all$CCA$eig/cap.all$tot.chi *100, 1) # proportion of variation associated with each axis
 proportions
-anova(cap1) # statistical significance of the constraint
+anova(cap.all) # statistical significance of the constraint
 
-cap_test <- capscale(mat_ecm ~ 1 , data=dat_ecm_30_site, distance='robust.aitchison', add=TRUE)
-ordistep(cap_test, formula(cap1), direction='forward')
-
-#This is the only explainitory variable orditest leaves in
-
-cap2 <- capscale(mat_ecm ~ Interval+Severity +Veg_Class
-                 , data=dat_ecm_30_site, distance='robust.aitchison', add=TRUE)
-
-Cap2_aov<-as.data.frame( anova(cap2, by = "margin"))%>%
-  rownames_to_column()
-plot(cap2)
-cap2 # summary of inertia
-proportions2<-round(cap2$CCA$eig/cap2$tot.chi *100, 1) # proportion of variation associated with each axis
-anova(cap2) # statistical significance of the constraint
+#cap_test <- capscale(mat_ecm ~ 1 , data=dat_ecm_30_site, distance='robust.aitchison', add=TRUE)
+#ordistep(cap_test, formula(cap1), direction='forward')
 
 
 
@@ -339,35 +182,31 @@ interval_colors <- c("Long" = "darkred", "Short" = "orange")
 
 
 # first plot - site scores along with centroids for each group
-p2<-cbind(dat_ecm_30_site%>%mutate(Site=as.numeric(Site),Transect=as.numeric(Transect))%>%left_join(Bag_Site %>% 
-        select(Site,Transect, Site_Pair)%>% unique(), by = c("Site","Transect"))
-          , scrs_site) %>% 
+p2 <- cbind(dat_ecm_30_site, scrs_site) %>% 
   ggplot(aes(x=CAP1, y=CAP2)) + 
   geom_vline(xintercept = c(0), color = "grey70", linetype = 2) +
   geom_hline(yintercept = c(0), color = "grey70", linetype = 2) +  
-  geom_point(aes( colour= Interval,shape= Severity), size=8, stroke = 3)+ 
-  #geom_text(aes( label = label), color= 'black', size=3)+
+  geom_point(aes(colour= Interval, shape= Severity), size=8, stroke = 3) + 
+  stat_ellipse(aes(color = Interval), level = 0.95, size = 2, linetype = 1) + # Add confidence ellipses
   scale_shape_manual(values = c(19,1))+
-  scale_colour_manual(values = interval_colors) +     # Custom colors for Interval
-  labs( x=  paste0("CAP1 (", proportions[1], "%)"), y=  paste0("CAP2 (", proportions[2], "%)"))+
-  geom_segment(data=scrs_biplot%>%
-                 filter(abs(CAP1) > 0.1 | abs(CAP2) > 0.1),
+  scale_colour_manual(values = interval_colors) +     
+  labs(x= paste0("CAP1 (", proportions[1], "%)"), y= paste0("CAP2 (", proportions[2], "%)")) +
+  geom_segment(data=scrs_biplot %>% filter(abs(CAP1) > 0.1 | abs(CAP2) > 0.1),
                inherit.aes = FALSE,
-               aes(x=0,y=0, xend=CAP1, yend=CAP2, group=label),
-               arrow = arrow(type = "closed",length=unit(3,'mm')),
+               aes(x=0, y=0, xend=CAP1, yend=CAP2, group=label),
+               arrow = arrow(type = "closed", length=unit(3, 'mm')),
                color= 'black') +
-  geom_text_repel(data=scrs_biplot%>%
-                    filter(abs(CAP1) > 0.1 | abs(CAP2) > 0.1),
+  geom_text(data=scrs_biplot %>% filter(abs(CAP1) > 0.1 | abs(CAP2) > 0.1),
                   inherit.aes = FALSE,
                   aes(x=CAP1, y=CAP2, label=label),
-                  colour='black',size=10,fontface="bold")+
-  xlim(c(min(scrs_site[, 'CAP1']), max(scrs_site[, 'CAP1']))) + 
-  ylim(c(min(scrs_site[, 'CAP2']), max(scrs_site[, 'CAP2']))) + 
-  theme_classic()+
-  theme(axis.text.x = element_text(angle = -45, hjust = 0.5,size=20),
+                  colour='black', size=10, fontface="bold") +
+  xlim(c(min(scrs_site[, 'CAP1']), max(scrs_site[, 'CAP1'])+.5)) + 
+  ylim(c(min(scrs_site[, 'CAP2'])-0.5, max(scrs_site[, 'CAP2'])+2)) + 
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = -45, hjust = 0.5, size=20),
         axis.text.y = element_text(size=20),
         axis.title.x = element_text(size=25),
-        axis.title.y = element_text(size=25) )+
+        axis.title.y = element_text(size=25)) +
   guides(color = guide_legend(override.aes = list(shape = 19, size = 20)),
          shape = guide_legend(override.aes = list(color = "black", size = 20))) +
   theme(legend.position='top')
@@ -429,8 +268,8 @@ cap.0 <- capscale(mat_ecm ~ 1, data=temp) # intercept-only, starting analysis
 
 # should we include all climate variables in our analysis
 # check for variance inflation - values higher than ~ 10 are unlikely to explain unique variation
-cap.cl <- capscale(mat_ecm ~ Annual_Prec + elev, data=dat_ecm_30_site)
-vif.cca(cap.cl)
+#cap.cl <- capscale(mat_ecm ~ Annual_Prec + elev, data=dat_ecm_30_site)
+#vif.cca(cap.cl)
 
 # variation partitioning - here to three groups of variables
 vp <- varpart(vegdist(mat_ecm, distance='robust.aitchison'), 

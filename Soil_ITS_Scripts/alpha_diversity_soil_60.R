@@ -114,7 +114,6 @@ unfilter<-Blast_ID %>%
   left_join(temp %>% rename(sample_ID = Site))
 
 excluded<-anti_join(unfilter,filter)
-table(Blast_ID)
 
 
 depth_ID_filter<-filter%>%

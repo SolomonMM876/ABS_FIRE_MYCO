@@ -88,7 +88,7 @@ out.severity.filter<-out.severity%>%
   mutate( rel_abun= (count/total_myco_reads)*100)
 
 p1<-out.severity.filter %>% 
-  ggplot(aes(x=Fire.Severity, y=rel_abun, fill=genus, text=OTU)) + # text aesthetic is for the ggplotly visualisation below
+  ggplot(aes(x=Fire.Severity, y=rel_abun, fill=family, text=OTU)) + # text aesthetic is for the ggplotly visualisation below
   geom_bar(stat = 'identity', position = position_stack(), width = 0.4) +
   scale_x_discrete(drop=FALSE) + 
   #scale_fill_manual(values = custom_palette) +  #palette.pals()
@@ -104,7 +104,7 @@ p1<-out.severity.filter %>%
 p1
 
 p2<-out.interval.filter %>% 
-  ggplot(aes(x=Fire.Interval, y=rel_abun, fill=genus, text=OTU)) + # text aesthetic is for the ggplotly visualisation below
+  ggplot(aes(x=Fire.Interval, y=rel_abun, fill=family, text=OTU)) + # text aesthetic is for the ggplotly visualisation below
   geom_bar(stat = 'identity', position = position_stack(), width = 0.4) +
   scale_x_discrete(drop=FALSE) + 
   #scale_fill_manual(values = custom_palette) +  #palette.pals()
@@ -139,17 +139,10 @@ Bag_Seq_wide<-Bag_Seq_wide%>%
 # extract the community table, save as a new object
 mat_myco<- Bag_Seq_wide %>% select(starts_with("ITSall"))
 
-# tax_gs_bag<-read.csv('Processed_data/taxa_w_genome_size_bag_data.csv')
-# 
-# myco_gs_otus <- tax_gs_bag$OTU
-# 
-# mat_ecm_gs<-mat_myco %>% 
-#   dplyr::select(all_of(myco_gs_otus)) 
 
-# run three permanovas, each with a different distance index / raw data input
 
-adonis2(mat_ecm~ Fire.Severity+Fire.Interval + Ortho_P_mg_kg+ Nitrate_mg_kg+ Ammonia_mg_kg +
-         log10_biomass_day+myco_host_total 
+adonis2(mat_myco~ Fire.Severity+Fire.Interval + Ortho_P_mg_kg+ Nitrate_mg_kg+ Ammonia_mg_kg +
+         perc_myco_host_freq 
           , data=Bag_Seq_wide, distance='robust.aitchison', add=TRUE)
 
 table(Bag_Seq_wide$Fire.Interval)
@@ -160,9 +153,8 @@ table(Bag_Seq_wide$Fire.Severity)
 #         ,data=Bag_Seq_wide, distance='robust.aitchison', add=TRUE)
 
 
-cap.all <- capscale(mat_ecm~ Fire.Interval + Fire.Severity + Ortho_P_mg_kg+
-                      Nitrate_mg_kg+ Ammonia_mg_kg+ perc_myco_host_freq + #myco_host_total
-                      log10_biomass_day 
+cap.all <- capscale(mat_myco~ Fire.Interval + Fire.Severity + Ortho_P_mg_kg+
+                      Nitrate_mg_kg+ Ammonia_mg_kg+ perc_myco_host_freq 
                     , data=Bag_Seq_wide, distance='robust.aitchison', add=TRUE)
 anova(cap.all)
 summary(cap.all)
@@ -172,9 +164,9 @@ cap.all
 plot(cap.all)
 proportions<-round(cap.all$CCA$eig/cap.all$tot.chi *100, 1) # proportion of variation associated with each axis
 
-cap_test <- capscale(mat_ecm ~ 1 , data=Bag_Seq_wide, distance='robust.aitchison', add=TRUE)
+#cap_test <- capscale(mat_myco ~ 1 , data=Bag_Seq_wide, distance='robust.aitchison', add=TRUE)
 
-ordistep(cap_test, formula(cap.all), direction='forward')
+#ordistep(cap_test, formula(cap.all), direction='forward')
 
 
 
@@ -185,6 +177,21 @@ scrs_spp <- scrs %>% filter(score=='species')
 scrs_site<- scrs %>% filter(score=='sites')
 scrs_cent <- scrs %>% filter(score=='centroids')
 scrs_biplot <- scrs %>% filter(score=='biplot')
+
+
+#Trying different scaling
+# scrs_scaled <- scores(cap.all, scaling = "sites", tidy=TRUE)
+# scrs_scaled<- scores(cap.all, scaling = "species", tidy=TRUE)
+# scrs_scaled <- scores(cap.all, scaling = "symmetric", tidy=TRUE)
+# 
+# 
+# scrs_biplot <- scrs_scaled %>% filter(score=='biplot')
+# scrs_site <- scrs_scaled %>% filter(score=='sites')
+
+
+
+
+
 
 interval_colors <- c("Long" = "darkred", "Short" = "orange")
 severity_colors <- c("Hgih" = "blue", "Low" = "green")
@@ -197,23 +204,24 @@ cbind(Bag_Seq_wide, scrs_site) %>%
   geom_vline(xintercept = c(0), color = "grey70", linetype = 2) +
   geom_hline(yintercept = c(0), color = "grey70", linetype = 2) +  
   geom_point(aes( colour= Fire.Interval,shape= Fire.Severity), size=8, stroke = 3)+ 
+  stat_ellipse(aes(color = Fire.Interval), level = 0.95, size = 2, linetype = 1) + # Add confidence ellipses
   geom_text(aes( label = Site), color= 'black', size=3)+
   #geom_text(data = scrs_cent, aes(label = label), size = 2) + 
   scale_shape_manual(values = c(19,1))+
   scale_colour_manual(values = interval_colors) +     # Custom colors for Interval
   labs( x=  paste0("CAP1 (", proportions[1], "%)"), y=  paste0("CAP2 (", proportions[2], "%)"))+
   geom_segment(data=scrs_biplot%>%
-                 filter(abs(CAP1) > 0.5 | abs(CAP2) > 0.5),
+                 filter(abs(CAP1) > 0.3 | abs(CAP2) > 0.3),
                inherit.aes = FALSE,
                aes(x=0,y=0, xend=CAP1, yend=CAP2, group=label),
                arrow = arrow(type = "closed",length=unit(3,'mm')),
                color= 'black') +
   geom_text_repel(data=scrs_biplot%>%
-                    filter(abs(CAP1) > 0.5 | abs(CAP2) > 0.5),
+                    filter(abs(CAP1) > 0.3 | abs(CAP2) > 0.3),
                   aes(x=CAP1, y=CAP2, label=label),
                   colour='black',size=6)+
-  xlim(c(min(scrs_site[, 'CAP1']), max(scrs_site[, 'CAP1']))) + 
-  ylim(c(min(scrs_site[, 'CAP2']), max(scrs_site[, 'CAP2']))) + 
+  xlim(c(min(scrs_site[, 'CAP1']-1), max(scrs_site[, 'CAP1'])+.2)) + 
+  ylim(c(min(scrs_site[, 'CAP2']), max(scrs_site[, 'CAP2'])+1)) + 
   theme_bw() + 
   theme(legend.position='top')->p2
 

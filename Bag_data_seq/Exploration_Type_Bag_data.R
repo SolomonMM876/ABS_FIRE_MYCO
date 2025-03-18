@@ -11,7 +11,7 @@ dat_explo<-dat_myco_RA%>%
   group_by(Site,Transect,Location,exploration_type)%>%
   summarise(explo_count=sum(count))%>%
   left_join(dat_myco_RA%>%select(Site,Transect,Location,Fire.Severity,Fire.Interval,reads_samp)%>%distinct())%>%
-  left_join(Bag_data%>%select(Site,Transect,Location,pH:Ortho_P_mg_kg))%>%
+  left_join(Bag_data%>%select(Site,Transect,Location,pH,Ortho_P_mg_kg,Ammonia_mg_kg,Nitrate_mg_kg))%>%
   mutate(RA_explo=explo_count/reads_samp,
          log_RA_explo=log10(RA_explo))
 #this is relative abundance compared to other mycorrhizal fungi
@@ -23,7 +23,7 @@ hist(log10(dat_explo$RA_explo))
 
 
 #fire model
-explo_model_fire<-lmer((log_RA_explo)~ exploration_type *(Fire.Severity+Fire.Interval) + 
+explo_model_fire<-lmer((log_RA_explo)~ exploration_type *(Fire.Severity+Fire.Interval+Nitrate_mg_kg+Ammonia_mg_kg+Ortho_P_mg_kg) + 
                          (1|Site/Transect),
                        data=dat_explo)
 

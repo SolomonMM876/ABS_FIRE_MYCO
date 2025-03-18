@@ -2,59 +2,27 @@ library(readr)
 library(tidyverse)
 
 
-#read in community data
+#read in community and bag data
+#From Bag_ITS_data_prep
+data<-read.csv('Processed_data/Bag_Seq_wide.csv')#bag data with selected meta and Myco communities
+
+
+data<-data%>%filter(!Tube_ID %in% c(95,96))%>%#These samples are being removed because I pooled two locations from same Site/Tran during DNA extraction
+  rename(readcount=myco_reads)%>%
+  filter(!is.na(readcount)) # 6 samples are not included because they either did not contain mycorrhizal OTUs, did not have highly probable guild info or belonged to multiple guilds
+  
+
+
+
+#these data already have exploration types incorperated
+#See BAG_ITS data prep
 myco_dat<-read.csv('Processed_data/Bag_Seq_myco_dat.csv')
 
-#read in community summary from jeff
-dat_summary <- read_tsv('Raw_data/Jeff_Prelim/SMM/ITS_output_summarised.tsv')%>%
-  left_join(myco_dat%>%select(Tube_ID,barcode)%>%distinct())%>%filter(!is.na(Tube_ID)) #Add Tube_ID
-
-#read in meta data with wide version of seq
-Bag_Seq_wide<-read.csv('Processed_data/Bag_Seq_wide.csv')
-
-
-
-# Data prep step
-data <- myco_dat %>%
-  group_by(Tube_ID, OTU) %>%
-  #transform to wide format
-  summarise(sequence_count = sum(count, na.rm = TRUE), .groups = 'drop') %>%
-  pivot_wider(values_from = sequence_count, names_from = OTU,  values_fill = 0) %>%
-  left_join(Bag_Seq_wide%>% 
-              distinct(Tube_ID,Site,Transect,Location,Fire.Interval, Fire.Severity,
-                       log10_biomass_day,C_N,C_P,N_P,
-                       Ortho_P_mg_kg,Nitrate_mg_kg,Ammonia_mg_kg,pH,
-                       perc_myco_host_freq,
-                       Latitude,Longitude),
-            by = "Tube_ID")%>%
-  left_join(dat_summary%>% select(Tube_ID,n_reads))%>%
-  rename(readcount=n_reads)%>%
-  mutate(Tube_ID=as.factor(Tube_ID),
-         Site=as.factor(Site),
-         Transect=as.factor(Transect),
-         Location=as.factor(Location))%>%
-  #left_join(Bag_data%>%select(Location_ID, Tube_ID), by= 'Tube_ID')%>%
-  select(Tube_ID,Site,Transect,Location, Fire.Interval, Fire.Severity,readcount,
-         log10_biomass_day,C_N,N_P,N_P,C_P,
-         perc_myco_host_freq, 
-         Latitude,Longitude,
-         Ortho_P_mg_kg,Nitrate_mg_kg,Ammonia_mg_kg,pH,
-         everything())#
-
-rm(dat_summary)
-
-
-library(readxl)
-Fun_Traits<-read_excel("Processed_data/Polme_etal_2021_FungalTraits.xlsx")
 
 #read in genome size taxa df
 tax_gs_bag<-read.csv('Processed_data/taxa_w_genome_size_bag_data.csv')
 # 
  TrData<-myco_dat%>%
-   left_join(Fun_Traits, by = c('genus'='GENUS'))%>%
-   select(OTU:genus,-count,-resampled_count,-resampled_date,Ectomycorrhiza_exploration_type_template,Ectomycorrhiza_lineage_template)%>%
-   rename(exploration_type=Ectomycorrhiza_exploration_type_template,
-          Ecm_lineage=Ectomycorrhiza_lineage_template)%>%
       left_join(tax_gs_bag%>%select(genus,mean_gs)%>%distinct())%>%
    distinct()
 

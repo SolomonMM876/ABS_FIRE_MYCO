@@ -12,12 +12,7 @@ modelDir = file.path(localDir,"models")
 
 data = read.csv(file.path(dataDir, "Bag_data.csv"))
 
-PhyData=read.csv(file.path(dataDir,'Trait_Phylo_data.csv'))%>%
-  mutate(across(everything(), as.factor))%>%
-  select(-exploration_type,-Ecm_lineage,-mean_gs)
 
-#order TrData and Y data the same
-otu_order <- PhyData$OTU
 
 # READ AND MODIFY ENVIRONMENTAL DATA (BEGINNING)####
 #Transform variables to more normal distributions and set factors
@@ -38,8 +33,7 @@ XData$Fire.Interval <- factor(XData$Fire.Interval, levels = c("Long", "Short"))
 
 #Select Community Data
 YData<-data%>%
-  select(starts_with('ITSall'))%>%
-  select(all_of(otu_order))
+  select(starts_with('ITSall'))
 
 
 # I could reduce the number of species here depending if I want to focus on more or less common
@@ -104,31 +98,13 @@ XFormula = ~Fire.Severity + Fire.Interval + log(readcount)+
   log10_biomass_day+ perc_myco_host_freq +
   Ortho_P_mg_kg+ Nitrate_mg_kg+ Ammonia_mg_kg+ pH #Soil Properties
 
-# CONSTRUCT TAXONOMICAL TREE TO BE USED AS PROXY FOR PHYLOGENETIC TREE
-taxonomicTree <- as.phylo(~phylum/class/order/family/genus/OTU, data = PhyData, collapse = FALSE)
-taxonomicTree$edge.length = rep(1,length(taxonomicTree$edge))
-plot(taxonomicTree,cex=0.5) 
 
 
-#Trait matrix, which I dont have because I dont have species traits here
-#TrFormula = ~exploration_type +  Ecm_lineage + mean_gs
-
-#make sure TrData and Y matrix have some species in same order
-
-# Get column names from Y and row names from Trdata
-Y_cols <- colnames(Y)
-
-# TrData<-TrData%>%
-#   mutate(OTU = factor(OTU, levels = Y_cols)) %>%
-#   arrange(OTU)%>%
-#   column_to_rownames('OTU')
-
+#transform to presence absence
 Y = as.matrix(YData)
 Y = 1*(Y>0)
 #build model
 m = Hmsc(Y = Y, XData = XData, XFormula = XFormula, 
-         phyloTree = taxonomicTree,
-        # TrData = TrData,TrFormula = TrFormula ,
          studyDesign = studyDesign, 
          ranLevels = list(Location = rL_location,
                           Transect = rL_transect, 
@@ -165,7 +141,7 @@ m
 # COMBINING AND SAVING MODELS (START)
 ##################################################################################################
 models = list(m)
-names(models) = c("presence-absence model_no Traits")
+names(models) = c("Bag data presence-absence model")
 save(models, file = file.path(modelDir, "unfitted_models.RData"))
 # TESTING THAT MODELS FIT WITHOUT ERRORS (START)
 ##################################################################################################
@@ -180,8 +156,8 @@ for(i in 1:length(models)){
 load(file=file.path(modelDir,"unfitted_models.RData"))
 
 nm = length(models)
-samples_list = c(250,250,250)
-thin_list = c(250,500,1000)
+samples_list = c(100,250,250,250)
+thin_list = c(10,250,500,1000)
 nChains = 2
 nParallel = nChains
 Lst = 1
@@ -211,105 +187,4 @@ while(Lst <= length(samples_list)){
   }
   Lst = Lst + 1
 }
-#this is if we want to test a set thin, whereas below is if we want to let it run for a while
-
-
-# nChains = 2
-# samples = 10
-# thin = 1 # try with thin = 1, thin = 10, thin = 100, etc.
-# transient<-0.3*thin*samples
-# nParallel = nChains
-# 
-# model<-sampleMcmc(m, samples = samples, thin=thin,
-#                   adaptNf=rep(ceiling(0.4*samples*thin),m$nr),
-#                   transient = ceiling(0.5*samples*thin),
-#                   nChains = nChains,
-#                   nParallel = nParallel)
-# filename=file.path(modelDir, paste0("models_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
-# save(model,file=filename)
-
-
-##################################################################################################
-
-# hurdle model
-# models = list()
-# for (i in 1){
-#   Y = as.matrix(YData)
-#   {Y = 1*(Y>0)}
-#   XFormula =     ~~Fire.Severity + Fire.Interval + log(readcount)+ 
-#     log10_biomass_day+ perc_myco_host_freq +
-#     Ortho_P_mg_kg+ Nitrate_mg_kg+ Ammonia_mg_kg+ pH
-#   
-#   m = Hmsc(Y = Y, XData = XData, XFormula = XFormula,
-#            phyloTree = taxonomicTree,
-#            TrData = TrData,TrFormula = TrFormula ,
-#            studyDesign = studyDesign, ranLevels = list(Location = rL_location,
-#                                                        Transect = rL_transect,
-#                                                        Site = rL_site),
-#            distr=switch(i,"probit"),
-#            YScale = TRUE)
-#   models[[i]] = m
-# }
-# names(models) = c("probit")
-
-#All of this that is below is if we want to run different iterations of the model in a loop 
-##################################################################
-#################################################################
-
-# In all models, we also add a random effect at the sampling unit level. The random effect models associations among the species,
-# which is what we are primarily interested about.
-#i=1 is a lognormal Poisson mode
-#i=2 and i=3 form together a hurdle model that separates presence-absence variation from abundance variation
-#i=2 is a probit model that is fitted to sequences countstruncated to presence-absence
-#i=3 is a normal model that is fitted to log-transformed sequence counts conditional on presence. 
-#This means that for i=3, sampling units where the species is not present are shown in the Y matrix as missing data (NA) rather than as zeros
-
-# this script is if I want to test different distributions
-# models = list()
-# for (i in 1:3){
-#   Y = as.matrix(YData)
-#   if (i==2) {Y = 1*(Y>0)}
-#   if (i==3) {
-#     Y[Y==0] = NA
-#     Y = log(Y)
-#   }
-#       XFormula =     ~~Fire.Severity + Fire.Interval + log(readcount)+ 
-#                         log10_biomass_day+ perc_myco_host_freq +
-#                         Ortho_P_mg_kg+ Nitrate_mg_kg+ Ammonia_mg_kg+ pH
-#       
-#     m = Hmsc(Y = Y, XData = XData, XFormula = XFormula,
-#              phyloTree = taxonomicTree,
-#              TrData = TrData,TrFormula = TrFormula ,
-#              studyDesign = studyDesign, ranLevels = list(Location = rL_location,
-#                                                          Transect = rL_transect,
-#                                                          Site = rL_site),
-#              distr=switch(i,"lognormal poisson","probit","normal"),
-#              YScale = TRUE)
-#   models[[i]] = m
-# }
-# names(models) = c("lognormal_poisson","probit","normal")
-
-
-# In the above script, we have used the option Yscale = TRUE to scale the response data to zero mean and unit variance.
-# is discussed in more detail in Section 8.3 of the book, this scaling influences only the normal model,
-# and it is done to make the default priors of Hmsc compatible with the data.
-
-
-#############################################################
-# # Thus, in summary, running the model fitting for thin = 1, 10, 100, 1000 typically saves a lot of time,
-# 
-# samples = 250
-# nChains = 3
-# 
-# for (thin in c(250,500,1000)){
-#   transient = 0.3*thin*samples
-#   for (i in 1:3){
-#     cat("Running model =", i, "with thin =", thin, "\n")
-#     models[[i]] = sampleMcmc(models[[i]], thin = thin, samples = samples, transient = transient,
-#                                     nChains = nChains, nParallel = nChains )
-#   }
-#   filename=file.path(modelDir, paste0("models_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
-#   save(models,file=filename)
-# }
-# 
 
