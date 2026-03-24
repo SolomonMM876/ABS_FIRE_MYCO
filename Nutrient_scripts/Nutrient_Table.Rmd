@@ -1,0 +1,53 @@
+---
+title: "ABS Fire"
+author: "Solomon Maerowitz-McMahan"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r process-and-display, echo=FALSE, message=FALSE}
+# Load required libraries
+library(dplyr)
+library(flextable)
+
+# Read data
+Nute_table <- read.csv('Nute_table.csv')
+
+# Process the data
+Nute_table_processed <- Nute_table %>%
+  mutate(across(where(is.numeric), ~ round(., digits = 2))) %>%
+  mutate(Site = factor(Site, levels = c(5, 7, 8, 10, 11, 12, 26, 29, 31, 34, 49, 56))) %>%
+  arrange(Site)
+
+# Rename columns for clarity
+Nute_table_processed <- Nute_table_processed %>%
+  rename(PO4 = PO4_Resin, NH4_Resin = NH4_Resin, NO3_Resin = NO3_Resin)
+
+# Create a flextable for Word output
+Nute_table_flex <- Nute_table_processed %>%
+  select(Site, PO4, NH4_Resin, NO3_Resin, Bray.P, NH4, NO3, Total.P, Carbon) %>%
+  flextable() %>%
+  set_header_labels(
+    PO4 = "PO4", NH4_Resin = "NH4", NO3_Resin = "NO3", 
+    Bray.P = "Bray P", NH4 = "NH4", NO3 = "NO3", 
+    Total.P = "Total P", Carbon = "Carbon"
+  ) %>%
+  add_header_row(
+    values = c("", "", "Resins mg/kg", "", "", "", "Soil mg/kg", "", ""),
+    colwidths = c(1, 1, 1, 1, 1, 1, 1, 1, 1)
+  ) %>%
+  theme_vanilla()
+Nute_table_flex
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

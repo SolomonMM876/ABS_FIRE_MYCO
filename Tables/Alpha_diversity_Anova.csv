@@ -1,0 +1,10 @@
+Factor,F,Df,Df.res,Pr(>F),Metric,source
+Fire.Severity,1.73,1,7.34,0.23,Shannon,1st mycelial collection
+Fire.Interval,2.48,1,7.5,0.16,Shannon,1st mycelial collection
+Fire.Severity:Fire.Interval,2.9,1,7.52,0.13,Shannon,1st mycelial collection
+Fire.Severity,1.5,1,7.34,0.26,Pielou,1st mycelial collection
+Fire.Interval,2.36,1,7.5,0.17,Pielou,1st mycelial collection
+Fire.Severity:Fire.Interval,4.12,1,7.52,0.08,Pielou,1st mycelial collection
+Fire.Severity,0.13,1,7.63,0.72,Chao1,1st mycelial collection
+Fire.Interval,0.86,1,7.74,0.38,Chao1,1st mycelial collection
+Fire.Severity:Fire.Interval,0.01,1,7.75,0.94,Chao1,1st mycelial collection

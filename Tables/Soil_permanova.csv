@@ -1,0 +1,4 @@
+"Factor","Df","SumOfSqs","R2","F","Pr(>F)","Sample_Type"
+"Fire.Severity:Fire.Interval",1,0.525453642573208,0.027653737780635,1.43082302516035,0.053,"Soil"
+"Residual",45,16.525743226102,0.8697219559974,NA,NA,"Soil"
+"Total",48,19.0011797588233,1,NA,NA,"Soil"

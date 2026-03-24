@@ -1,0 +1,4 @@
+"Factor","F","Df","Df.res","Pr(>F)","Metric","source"
+"Fire.Interval",0.9,1,130.69,0.34,"Shannon diversity","2nd mycelial collection"
+"Fire.Interval",0.94,1,56.85,0.34,"Pielou evenness","2nd mycelial collection"
+"Fire.Interval",1.01,1,103.05,0.32,"Chao richness","2nd mycelial collection"

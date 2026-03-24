@@ -1,0 +1,51 @@
+# ── R session files ──
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# ── Large raw & processed data ──
+Raw_data/
+Processed_data/
+Bag_data_seq/
+Funguild/
+ABS_Second_Rnd/
+Amaia/
+
+# ── HMSC fitted models & results (very large) ──
+HMSC_ABS/models/
+HMSC_ABS/models_updated/
+HMSC_ABS/results/
+HMSC_ABS/results_updated/
+HMSC_ABS/ABS_1st_Rnd/
+HMSC_ABS/ABS_2nd_Rnd/
+HMSC_output/
+
+# ── Generated plots & figures ──
+plots/
+Figures/
+
+# ── Generated tables (Word/RDS outputs) ──
+Tables/*.docx
+Tables/*.rds
+
+# ── Binary & office documents ──
+*.docx
+*.pdf
+*.xlsx
+*.xls
+*.tgz
+*.gz
+*.zip
+
+# ── Sequence data ──
+*.fastq
+*.fasta
+*.fa
+*.fq
+*.fastq.gz
+
+# ── OS & IDE ──
+Thumbs.db
+.DS_Store
+*.swp

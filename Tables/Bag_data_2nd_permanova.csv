@@ -1,0 +1,4 @@
+"Factor","Df","SumOfSqs","R2","F","Pr(>F)","Sample_Type"
+"Fire.Interval",1,0.523040898337204,0.0531404104580163,1.2347015787651,0.199,"2nd mycelial collection"
+"Residual",22,9.31957969546558,0.946859589541984,NA,NA,"2nd mycelial collection"
+"Total",23,9.84262059380278,1,NA,NA,"2nd mycelial collection"

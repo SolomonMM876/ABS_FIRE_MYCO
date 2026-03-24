@@ -1,0 +1,126 @@
+---
+title: "ABS Fire"
+author: "Solomon Maerowitz-McMahan"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r process-and-display, echo=FALSE, message=FALSE}
+# Load required libraries
+library(dplyr)
+library(knitr)
+library(stringr)
+library(kableExtra)
+library(officer)  # For Word output
+
+CNP_clean<-read.csv('CNP_final.csv')
+
+# Process the data
+CNP_clean_processed <- CNP_clean %>%
+  # Round numeric columns starting with 'C_' or 'N_' to 1 decimal point
+ mutate(across(
+  .cols = matches("^C_|^N_") & !starts_with("C_N_P_Ratio"),  # Exclude "C_N_P"
+    ~ round(as.numeric(.), digits = 1)))%>%
+  # Round all numeric columns to 1 decimal point and convert to scientific notation
+  mutate( Percent_Phos_ = format(Percent_Phos_, scientific = TRUE),
+          Percent_Phos_ = round(as.numeric(Percent_Phos_), digits = 4))%>%
+          # Replace NA values with "--"
+  mutate(across(everything(), ~ ifelse(is.na(.), "--", .))) %>%
+  # Rename Percent_Phos_ to Phosphorus
+  rename(P = Percent_Phos_,
+         C= Carbon,
+         N= Nitrogen,
+         Frequency=Fire.Interval,
+         Severity=Fire.Severity,
+         C_N_P=C_N_P_ratio)%>%
+  mutate(P = str_replace(P,'NA', "--") )%>%
+  # Round all numeric columns to 2 digits and 1 decimal point
+  mutate(across(where(is.numeric), ~ round(., digits = 1)))%>%
+  mutate(Site = factor(Site, levels = c(5, 7, 8, 10, 11, 12, 26, 29, 31, 34, 49, 56))) %>%
+  arrange(Site) %>% 
+  select(Sample, Frequency, Severity, C, N, P, C_N, C_P, N_P)
+
+# # Add means and standard errors for numeric columns
+# numeric_summary <- CNP_clean %>%
+#   summarise(across(
+#     where(is.numeric),
+#     list(
+#       mean = ~ mean(., na.rm = TRUE),
+#       se = ~ sd(., na.rm = TRUE) / sqrt(sum(!is.na(.)))
+#     )
+#   ))
+# # Prepare summary rows for means and SE
+# # Create summary rows for means and SE
+# mean_row <- data.frame(
+#   Site = "Mean",
+#   Transect = "",
+#   Fire.Interval = "",
+#   Fire.Severity = "",
+#   Carbon = round(numeric_summary$Carbon_mean, 2),
+#   Nitrogen = round(numeric_summary$Nitrogen_mean, 2),
+#   C_N = round(numeric_summary$C_N_mean, 2),
+#   Phosphorus = round(numeric_summary$Percent_Phos__mean, 5),
+#   C_P = round(numeric_summary$C_P_mean, 2)
+# )
+# 
+# se_row <- data.frame(
+#   Site = "SE",
+#   Transect = "",
+#   Interval = "",
+#   Severity = "",
+#   C = round(numeric_summary$Carbon_se, 2),
+#   N = round(numeric_summary$Nitrogen_se, 2),
+#   C_N = round(numeric_summary$C_N_se, 2),
+#   P = round(numeric_summary$Percent_Phos__se, 5),
+#   C_P = round(numeric_summary$C_P_se, 2)
+# )
+# 
+# # Add the summary rows to the processed data
+# CNP_clean_combined <- bind_rows(
+#   CNP_clean_processed%>%mutate(P=as.double(P), C_P=as.double(C_P)),
+#   mean_row,
+#   se_row
+# )
+#view(CNP_clean_processed)
+# Display the table with kable
+CNP_clean_processed %>%
+  kable(
+    caption = "Table XXX Elemental composition of mycorrhizal fungal biomass collected",
+    digits = 2,
+    align = "c"
+  ) %>%
+  kable_styling(full_width = TRUE) %>%
+  column_spec(1, width = "20em") %>%  # Sample
+  column_spec(2, width = "15em") %>%  # Frequency
+  column_spec(3, width = "15em") %>%  # Severity
+  column_spec(6, width = "15em") %>%  # P
+  column_spec(9, width = "15em")      # C_N_P
+
+# or I can just print as so
+
+library(flextable)
+
+# Convert table to a flextable object
+ft <- CNP_clean_processed %>%
+  flextable() %>%
+  autofit()  # Adjust column width
+
+# Save to Word
+doc <- read_docx() %>%
+  body_add_flextable(ft) %>%
+  body_add_par("Table XXX Elemental composition of mycorrhizal fungal biomass collected", style = "heading 2", pos = 'before')
+
+print(doc, target = "CNP_Table_Output.docx")
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

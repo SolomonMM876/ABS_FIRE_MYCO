@@ -1,0 +1,8 @@
+"Factor","F","Df","Df.res","Pr(>F)","Round"
+"Fire.Severity",2.31,1,6.91,0.17,"First Round"
+"Fire.Interval",3.8,1,7.08,0.09,"First Round"
+"Ortho_P_mg_kg",3.72,1,68.32,0.06,"First Round"
+"Nitrate_mg_kg",0.06,1,66.26,0.81,"First Round"
+"Ammonia_mg_kg",0,1,74.48,0.98,"First Round"
+"pH",0.07,1,43.48,0.79,"First Round"
+"perc_myco_host_freq",2.02,1,10.66,0.18,"First Round"

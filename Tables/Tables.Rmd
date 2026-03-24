@@ -1,0 +1,121 @@
+---
+title: "ABS_Fire"
+author: "Solomon Maerowitz-McMahan"
+date: "r Sys.Date()"
+output: word_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Inserting tables into Word
+
+# Myco Tax table
+ ```{r echo=TRUE}
+ 
+library(knitr)
+library(tidyverse)
+library(flextable)
+library(officer)
+
+ myco_type_pub<-read.csv('processed_data/Myco_typ_pub.csv')
+ # Create a Word-friendly table
+ft <- flextable(myco_type_pub) %>%
+ set_table_properties(layout = "autofit") %>%  # Ensures the table fits within page width
+width(j = 1, width = 3) %>%  # Species column (italicized)
+width(j = 2, width = 2) %>%  # Family column
+ width(j = 3, width = 2) %>%  # Type column
+   width(j = 4, width = 5) %>%  # Notes column (wider)
+   align(align = "left", part = "all") %>%  # Center text in all parts of the table
+  bold(part = "header") %>%  # Bold headers
+  #italic(j = 1, part = "body") %>%  # Italicize first column (Species)
+   border_outer(border = fp_border(width = 1)) %>%  # Outer border
+  border_inner_h(border = fp_border(width = 0.5))  # Horizontal borders inside table
+
+# # Print table
+# ft
+```
+
+
+# ```{r echo=TRUE}
+# library(flextable)
+# library(dplyr)
+# 
+# # Load data
+# myco_type_pub <- read.csv('processed_data/Myco_typ_pub.csv')
+# 
+# # Italicize species names for Word
+# myco_type_pub <- myco_type_pub %>%
+#   mutate(Species = paste0("*", Species, "*"))  # Markdown-style italics for Word
+# 
+# # Create a Word-friendly table with column widths
+# flextable(myco_type_pub) %>%
+#   set_table_properties(layout = "autofit") %>%  # Ensures table fits within page width
+#   width(j = 1, width = 3) %>%  # Set width for first column (Species)
+#   width(j = 2, width = 3) %>%  # Family column
+#   width(j = 3, width = 2.5) %>%  # Type column
+#   width(j = 4, width = 1.5) %>%  # Study column
+#   width(j = 5, width = 6)        # Notes column (wider)
+# ```
+
+
+# ```{r echo=TRUE}
+# library(knitr)
+# library(tidyverse)
+# library(flextable)
+# library(officer)
+# 
+# #12 Site data
+# 
+# Site_dat_12<-read.csv("Processed_data/12_Sites_Info.csv")
+# 
+# # Rename columns
+# colnames(Site_dat_12) <- c("Site", "Fire Severity", "Fire Interval", "Vegetation Class", 
+#                            "Total P", "Carbon", "Nitrogen", "Ammonia (mg/kg)", 
+#                            "Nitrate (mg/kg)", "Ortho-P (mg/kg)", "pH", "Days Installed 1st Round")
+# 
+# # Create a Word-friendly table
+# 
+# ft <- flextable(Site_dat_12) %>%
+#   set_table_properties(layout = "autofit") %>%
+#   width(j = 1, width = 3) %>%  # Site column
+#   width(j = 2, width = 2) %>%  # Fire Severity column
+#   width(j = 3, width = 2) %>%  # Fire Interval column
+#   width(j = 4, width = 5) %>%  # Vegetation Class column (wider)
+#   align(align = "left", part = "all") %>%
+#   bold(part = "header") %>%
+#   border_outer(border = fp_border(width = 1)) %>%
+#   border_inner_h(border = fp_border(width = 0.5))
+# 
+# 
+# # Print table
+# ft
+#```
+
+
+ ```{r echo=TRUE}
+ 
+library(knitr)
+library(tidyverse)
+library(flextable)
+library(officer)
+
+ myco_type_pub<-read.csv('processed_data/Myco_typ_pub.csv')
+ # Create a Word-friendly table
+ft <- flextable(myco_type_pub) %>%
+ set_table_properties(layout = "autofit") %>%  # Ensures the table fits within page width
+width(j = 1, width = 3) %>%  # Species column (italicized)
+width(j = 2, width = 2) %>%  # Family column
+ width(j = 3, width = 2) %>%  # Type column
+   width(j = 4, width = 5) %>%  # Notes column (wider)
+   align(align = "left", part = "all") %>%  # Center text in all parts of the table
+  bold(part = "header") %>%  # Bold headers
+  #italic(j = 1, part = "body") %>%  # Italicize first column (Species)
+   border_outer(border = fp_border(width = 1)) %>%  # Outer border
+  border_inner_h(border = fp_border(width = 0.5))  # Horizontal borders inside table
+
+# # Print table
+# ft
+```
